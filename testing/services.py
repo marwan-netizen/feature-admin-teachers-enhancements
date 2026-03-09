@@ -1,26 +1,58 @@
 import logging
 from django.db import transaction
 from .models import Test, Question, Option, StudentAnswer, Result, Evaluation
-from ai_engine.services import AIService
+from ai_engine.application.factory import AIServiceFactory
+from core.exceptions import AIServiceError
 
 logger = logging.getLogger(__name__)
 
 class TestingService:
     def __init__(self):
-        self.ai_service = AIService()
+        self.ai_service = AIServiceFactory.create_standard_service()
+
+    def _persist_test_dto(self, dto):
+        with transaction.atomic():
+            test = Test.objects.create(
+                test_name=dto.name,
+                level=dto.level,
+                skill=dto.skill,
+                content=dto.content
+            )
+            for q_dto in dto.questions:
+                question = Question.objects.create(
+                    test=test,
+                    question_text=q_dto.text,
+                    question_type=q_dto.question_type
+                )
+                for o_dto in q_dto.options:
+                    Option.objects.create(
+                        question=question,
+                        option_text=o_dto.text,
+                        is_correct=o_dto.is_correct
+                    )
+            return test.test_id
 
     def start_dynamic_test_session(self, session):
-        test_ids = self.ai_service.generate_comprehensive_test()
-        listening_id = self.ai_service.generate_listening_test()
+        try:
+            comp_test = self.ai_service.generate_comprehensive_test()
+            listening_tests = self.ai_service.generate_listening_test()
 
-        if test_ids or listening_id:
             session['dynamic_tests_ready'] = True
-            final_ids = test_ids or {}
-            if listening_id:
-                final_ids['listening'] = listening_id
+            final_ids = {}
+
+            final_ids['reading'] = self._persist_test_dto(comp_test.reading)
+            final_ids['writing'] = self._persist_test_dto(comp_test.writing)
+            final_ids['speaking'] = self._persist_test_dto(comp_test.speaking)
+
+            if listening_tests:
+                first_listening_id = self._persist_test_dto(listening_tests[0])
+                final_ids['listening'] = first_listening_id
+
             session['dynamic_test_ids'] = final_ids
             return True
-        return False
+        except AIServiceError as e:
+            logger.error(f"Failed to start dynamic test session: {str(e)}")
+            return False
 
     def process_mcq_submission(self, user, test_id, student_id, answers_dict, skill):
         test = Test.objects.get(test_id=test_id)
@@ -61,7 +93,11 @@ class TestingService:
             defaults={'question_text': 'Writing Essay', 'question_type': 'essay'}
         )
 
-        evaluation = self.ai_service.evaluate_response(essay_text, 'writing')
+        try:
+            evaluation = self.ai_service.evaluate_response(essay_text, 'writing')
+        except AIServiceError as e:
+            logger.error(f"Evaluation failed in TestingService: {str(e)}")
+            evaluation = {'score': 0, 'feedback': 'Evaluation failed.'}
 
         with transaction.atomic():
             answer, _ = StudentAnswer.objects.update_or_create(

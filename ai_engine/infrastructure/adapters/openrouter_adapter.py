@@ -5,7 +5,7 @@ import requests
 import uuid
 import urllib.parse
 from django.conf import settings
-from ai_engine.interfaces import TextGenerationProvider, TTSProvider
+from ai_engine.domain.interfaces import TextGenerationProvider, TTSProvider
 
 logger = logging.getLogger(__name__)
 

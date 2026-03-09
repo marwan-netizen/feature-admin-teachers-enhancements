@@ -2,6 +2,7 @@ import pytest
 from testing.services import TestingService
 from testing.models import Test, Question, Option, Result
 from accounts.models import User, Student
+from ai_engine.domain.entities import ComprehensiveTestDTO, TestDTO, QuestionDTO, OptionDTO
 
 @pytest.mark.django_db
 class TestTestingService:
@@ -37,3 +38,25 @@ class TestTestingService:
 
         assert result['score'] == 90
         assert Result.objects.get(user=user, test=test).final_score == 90
+
+    def test_start_dynamic_test_session(self, mocker):
+        service = TestingService()
+
+        mock_comp = ComprehensiveTestDTO(
+            reading=TestDTO(name="Reading", level="B", skill="reading", content="P", questions=[
+                QuestionDTO(text="Q", options=[OptionDTO(text="O", is_correct=True)])
+            ]),
+            writing=TestDTO(name="Writing", level="B", skill="writing", content="T"),
+            speaking=TestDTO(name="Speaking", level="B", skill="speaking", content="S")
+        )
+
+        mocker.patch.object(service.ai_service, 'generate_comprehensive_test', return_value=mock_comp)
+        mocker.patch.object(service.ai_service, 'generate_listening_test', return_value=[])
+
+        session = {}
+        success = service.start_dynamic_test_session(session)
+
+        assert success is True
+        assert session['dynamic_tests_ready'] is True
+        assert 'reading' in session['dynamic_test_ids']
+        assert Test.objects.filter(test_id=session['dynamic_test_ids']['reading']).exists()

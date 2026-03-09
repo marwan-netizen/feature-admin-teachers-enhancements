@@ -2,7 +2,7 @@ import os
 import json
 import logging
 import google.generativeai as genai
-from ai_engine.interfaces import EvaluationProvider
+from ai_engine.domain.interfaces import EvaluationProvider
 
 logger = logging.getLogger(__name__)
 

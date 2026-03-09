@@ -2,7 +2,7 @@ import os
 import requests
 import json
 import logging
-from ai_engine.interfaces import TextGenerationProvider
+from ai_engine.domain.interfaces import TextGenerationProvider
 
 logger = logging.getLogger(__name__)
 
