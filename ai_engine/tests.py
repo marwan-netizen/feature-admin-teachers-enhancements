@@ -1,28 +1,34 @@
 import pytest
 from unittest.mock import MagicMock
-from ai_engine.services import AIService
-from testing.models import Test
+from ai_engine.application.services import AIService
+from ai_engine.domain.entities import ComprehensiveTestDTO
+from ai_engine.domain.interfaces import TextGenerationProvider, EvaluationProvider
 
 @pytest.mark.django_db
 class TestAIService:
-    def test_generate_comprehensive_test_success(self, mocker):
-        # Mock Groq Adapter
-        mock_groq = mocker.patch('ai_engine.services.GroqProvider')
-        mock_groq.return_value.generate.return_value = '{"reading": {"passage": "Test passage", "questions": []}, "writing": {"topic": "Test topic"}, "speaking": {"passage": "Test speaking"}}'
+    @pytest.fixture
+    def mock_text_gen(self):
+        return MagicMock(spec=TextGenerationProvider)
 
-        service = AIService()
-        test_ids = service.generate_comprehensive_test()
+    @pytest.fixture
+    def mock_evaluator(self):
+        return MagicMock(spec=EvaluationProvider)
 
-        assert 'reading' in test_ids
-        assert 'writing' in test_ids
-        assert 'speaking' in test_ids
-        assert Test.objects.filter(test_id=test_ids['reading']).exists()
+    def test_generate_comprehensive_test_success(self, mock_text_gen, mock_evaluator):
+        mock_text_gen.generate.return_value = '{"reading": {"passage": "Test passage", "questions": []}, "writing": {"topic": "Test topic"}, "speaking": {"passage": "Test speaking"}}'
 
-    def test_evaluate_response(self, mocker):
-        mock_gemini = mocker.patch('ai_engine.services.GeminiProvider')
-        mock_gemini.return_value.evaluate.return_value = {'score': 80, 'feedback': 'Good'}
+        service = AIService(text_generator=mock_text_gen, evaluator=mock_evaluator)
+        result = service.generate_comprehensive_test()
 
-        service = AIService()
+        assert isinstance(result, ComprehensiveTestDTO)
+        assert result.reading.content == "Test passage"
+        assert result.writing.content == "Test topic"
+        assert result.speaking.content == "Test speaking"
+
+    def test_evaluate_response(self, mock_text_gen, mock_evaluator):
+        mock_evaluator.evaluate.return_value = {'score': 80, 'feedback': 'Good'}
+
+        service = AIService(text_generator=mock_text_gen, evaluator=mock_evaluator)
         result = service.evaluate_response("Test text", "writing")
 
         assert result['score'] == 80

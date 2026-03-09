@@ -32,12 +32,17 @@ LingoPulse AI is a world-class English proficiency assessment platform powered b
 We use `pytest` for unit and integration tests.
 
 ```bash
-python -m pytest
+APP_KEY=secret python -m pytest
 ```
 
 ## 🛠 Architecture
 
-This project follows a **Modular Monolith** architecture with **Clean Architecture** principles. For a deep dive into the design decisions, see [ARCHITECTURE.md](ARCHITECTURE.md).
+This project follows a **Modular Clean Architecture**. For a deep dive into the design decisions, see the following documentation:
+
+- [Architectural Audit](docs/ARCHITECTURAL_AUDIT.md)
+- [Target Architecture Design](docs/TARGET_ARCHITECTURE.md)
+- [Developer Guide](docs/DEVELOPER_GUIDE.md)
+- [Architectural Decision Records (ADRs)](docs/adr/)
 
 ## 🏗 Modular Structure
 

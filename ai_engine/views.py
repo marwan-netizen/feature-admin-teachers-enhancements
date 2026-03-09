@@ -10,10 +10,10 @@ from django.conf import settings
 from django.db import transaction
 from testing.models import Test, Question, Option, StudentAnswer, Result, Evaluation
 from .models import ChatSession
-from .services import AIService
+from .application.factory import AIServiceFactory
 
 logger = logging.getLogger(__name__)
-ai_service = AIService()
+ai_service = AIServiceFactory.create_standard_service()
 
 def ollama_explain(request):
     if request.method != 'POST':
