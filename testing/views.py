@@ -1,13 +1,13 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.db import transaction
-from django.db.models import Count
 from django.http import JsonResponse
-from .models import Test, Question, Option, DentAnswer, Result, Evaluation
+from .models import Test, Result
 from accounts.models import Student
-from ai_engine.views import evaluate_with_gemini, generate_tests_groq, generate_listening_openrouter
+from .services import TestingService
 import logging
 
 logger = logging.getLogger(__name__)
+
+testing_service = TestingService()
 
 def get_student_id(request):
     if not request.user.is_authenticated: return None
@@ -21,14 +21,7 @@ def start_ai(request):
     if not request.user.is_authenticated:
         return redirect('accounts:login')
 
-    test_ids = generate_tests_groq()
-    listening_id = generate_listening_openrouter()
-
-    if test_ids or listening_id:
-        request.session['dynamic_tests_ready'] = True
-        final_ids = test_ids or {}
-        if listening_id: final_ids['listening'] = listening_id
-        request.session['dynamic_test_ids'] = final_ids
+    if testing_service.start_dynamic_test_session(request.session):
         return redirect('testing:reading_start')
 
     request.session['dynamic_tests_ready'] = False
@@ -57,34 +50,7 @@ def submit_reading(request, q):
             if not test: return redirect('testing:reading_done')
             test_id = test.test_id
 
-        test = Test.objects.get(test_id=test_id)
-        questions = test.questions.all()
-        correct_count = 0
-
-        with transaction.atomic():
-            for question in questions:
-                answer_key = f'q{question.question_id}'
-                selected_option_id = request.POST.get(answer_key)
-                if selected_option_id:
-                    try:
-                        option = Option.objects.get(option_id=selected_option_id)
-                        DentAnswer.objects.update_or_create(
-                            student_id=student_id,
-                            question=question,
-                            defaults={'option': option}
-                        )
-                        if option.is_correct:
-                            correct_count += 1
-                    except Option.DoesNotExist:
-                        continue
-
-            final_score = (correct_count / questions.count()) * 100 if questions.count() > 0 else 0
-            Result.objects.update_or_create(
-                user=request.user,
-                test=test,
-                defaults={'final_score': final_score}
-            )
-
+        testing_service.process_mcq_submission(request.user, test_id, student_id, request.POST, 'reading')
         return redirect('testing:reading_done')
     return redirect('testing:reading_done')
 
@@ -111,33 +77,7 @@ def submit_listening(request, q):
             if not test: return redirect('testing:listening_done')
             test_id = test.test_id
 
-        test = Test.objects.get(test_id=test_id)
-        questions = test.questions.all()
-        correct_count = 0
-
-        with transaction.atomic():
-            for question in questions:
-                answer_key = f's{question.question_id}'
-                selected_option_id = request.POST.get(answer_key)
-                if selected_option_id:
-                    try:
-                        option = Option.objects.get(option_id=selected_option_id)
-                        DentAnswer.objects.update_or_create(
-                            student_id=student_id,
-                            question=question,
-                            defaults={'option': option}
-                        )
-                        if option.is_correct:
-                            correct_count += 1
-                    except Option.DoesNotExist:
-                        continue
-
-            final_score = (correct_count / questions.count()) * 100 if questions.count() > 0 else 0
-            Result.objects.update_or_create(
-                user=request.user,
-                test=test,
-                defaults={'final_score': final_score}
-            )
+        testing_service.process_mcq_submission(request.user, test_id, student_id, request.POST, 'listening')
         return redirect('testing:listening_done')
     return redirect('testing:listening_done')
 
@@ -164,16 +104,9 @@ def submit_writing(request):
             if not test: return redirect('testing:writing_done')
             test_id = test.test_id
 
-        test = Test.objects.get(test_id=test_id)
-        question, _ = Question.objects.get_or_create(test=test, defaults={'question_text': 'Writing Essay', 'question_type': 'essay'})
-
         if essay:
-            evaluation = evaluate_with_gemini(essay, 'writing')
-            with transaction.atomic():
-                answer = DentAnswer.objects.update_or_create(student_id=student_id, question=question, defaults={'answer_text': essay})[0]
-                Evaluation.objects.update_or_create(answer=answer, defaults={'ai_score': evaluation.get('score', 0), 'ai_feedback': evaluation.get('feedback', '')})
-                Result.objects.update_or_create(user=request.user, test=test, defaults={'final_score': evaluation.get('score', 0)})
-            return redirect('testing:writing_done')
+            testing_service.process_writing_submission(request.user, test_id, student_id, essay)
+        return redirect('testing:writing_done')
 
     return redirect('testing:writing_done')
 
@@ -202,26 +135,7 @@ def submit_speaking(request):
             if not test: return redirect('testing:speaking_done')
             test_id = test.test_id
 
-        test = Test.objects.get(test_id=test_id)
-        question, _ = Question.objects.get_or_create(test=test, defaults={'question_text': 'Speaking Passage', 'question_type': 'speaking'})
-
-        with transaction.atomic():
-            answer = DentAnswer.objects.update_or_create(
-                student_id=student_id,
-                question=question,
-                defaults={'answer_text': transcription}
-            )[0]
-
-            Evaluation.objects.update_or_create(
-                answer=answer,
-                defaults={'ai_score': accuracy, 'ai_feedback': f"Accuracy: {accuracy}%"}
-            )
-
-            Result.objects.update_or_create(
-                user=request.user,
-                test=test,
-                defaults={'final_score': accuracy}
-            )
+        testing_service.process_speaking_submission(request.user, test_id, student_id, transcription, accuracy)
         return redirect('testing:speaking_done')
     return redirect('testing:results')
 

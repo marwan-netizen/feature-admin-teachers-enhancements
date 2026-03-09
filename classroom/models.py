@@ -1,7 +1,8 @@
 from django.db import models
 from accounts.models import User, Student, Teacher
+from core.models import SoftDeleteModel
 
-class Classes(models.Model):
+class Classes(SoftDeleteModel):
     class_id = models.AutoField(primary_key=True)
     classes_name = models.CharField(max_length=50)
     teacher = models.ForeignKey(Teacher, on_delete=models.SET_NULL, null=True, blank=True)
@@ -14,7 +15,7 @@ class Classes(models.Model):
     class Meta:
         db_table = 'classes'
 
-class ClassStudent(models.Model):
+class ClassStudent(models.Model): # Link table usually doesn't need soft delete, but we can add it for consistency if desired.
     classes = models.ForeignKey(Classes, on_delete=models.CASCADE)
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -24,7 +25,7 @@ class ClassStudent(models.Model):
         db_table = 'class_student'
         unique_together = ('classes', 'student')
 
-class OnlineSession(models.Model):
+class OnlineSession(SoftDeleteModel):
     session_id = models.AutoField(primary_key=True)
     class_info = models.ForeignKey(Classes, on_delete=models.CASCADE, db_column='class_id')
     teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE)
@@ -41,7 +42,7 @@ class OnlineSession(models.Model):
     class Meta:
         db_table = 'online_sessions'
 
-class Assignment(models.Model):
+class Assignment(SoftDeleteModel):
     class_info = models.ForeignKey(Classes, on_delete=models.CASCADE, db_column='class_id')
     teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE)
     title = models.CharField(max_length=255)
@@ -55,7 +56,7 @@ class Assignment(models.Model):
     class Meta:
         db_table = 'assignments'
 
-class AssignmentAttachment(models.Model):
+class AssignmentAttachment(SoftDeleteModel):
     assignment = models.ForeignKey(Assignment, on_delete=models.CASCADE, related_name='attachments')
     file_path = models.CharField(max_length=255)
     file_name = models.CharField(max_length=255)
@@ -66,7 +67,7 @@ class AssignmentAttachment(models.Model):
     class Meta:
         db_table = 'assignment_attachments'
 
-class AssignmentSubmission(models.Model):
+class AssignmentSubmission(SoftDeleteModel):
     assignment = models.ForeignKey(Assignment, on_delete=models.CASCADE, related_name='submissions')
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
     status = models.CharField(max_length=20, default='pending')
@@ -79,7 +80,7 @@ class AssignmentSubmission(models.Model):
     class Meta:
         db_table = 'assignment_submissions'
 
-class SubmissionVersion(models.Model):
+class SubmissionVersion(SoftDeleteModel):
     submission = models.ForeignKey(AssignmentSubmission, on_delete=models.CASCADE, related_name='versions')
     content = models.TextField(null=True, blank=True)
     file_path = models.CharField(max_length=255, null=True, blank=True)
@@ -92,7 +93,7 @@ class SubmissionVersion(models.Model):
     class Meta:
         db_table = 'submission_versions'
 
-class Grade(models.Model):
+class Grade(SoftDeleteModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     class_info = models.ForeignKey(Classes, on_delete=models.CASCADE, db_column='class_id')
     midterm = models.IntegerField(null=True, blank=True)

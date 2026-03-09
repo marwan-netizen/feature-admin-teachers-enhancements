@@ -1,7 +1,8 @@
 from django.db import models
 from accounts.models import User
+from core.models import SoftDeleteModel
 
-class ChatSession(models.Model):
+class ChatSession(SoftDeleteModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     role = models.CharField(max_length=50) # 'user' or 'model'
     content = models.TextField()

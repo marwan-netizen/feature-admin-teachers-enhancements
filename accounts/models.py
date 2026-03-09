@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+from core.models import SoftDeleteModel
 
 class UserManager(BaseUserManager):
     def create_user(self, email, full_name, password=None, role='student'):
@@ -27,7 +28,7 @@ class UserManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
-class User(AbstractBaseUser, PermissionsMixin):
+class User(AbstractBaseUser, PermissionsMixin, SoftDeleteModel):
     user_id = models.AutoField(primary_key=True)
     full_name = models.CharField(max_length=255)
     email = models.EmailField(unique=True, max_length=100)
@@ -53,7 +54,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     def __str__(self):
         return self.email
 
-class Admin(models.Model):
+class Admin(SoftDeleteModel):
     admin_id = models.AutoField(primary_key=True)
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='admin_profile')
     created_at = models.DateTimeField(auto_now_add=True)
@@ -63,7 +64,7 @@ class Admin(models.Model):
     class Meta:
         db_table = 'admin'
 
-class Teacher(models.Model):
+class Teacher(SoftDeleteModel):
     teacher_id = models.AutoField(primary_key=True)
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='teacher_profile')
     created_at = models.DateTimeField(auto_now_add=True)
@@ -73,7 +74,7 @@ class Teacher(models.Model):
     class Meta:
         db_table = 'teachers'
 
-class Student(models.Model):
+class Student(SoftDeleteModel):
     student_id = models.AutoField(primary_key=True)
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='student_profile')
     level = models.CharField(max_length=50, null=True, blank=True)
