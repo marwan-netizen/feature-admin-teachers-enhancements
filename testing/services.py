@@ -1,3 +1,10 @@
+"""
+Application services for the Testing module.
+
+Contains the logic for managing test sessions, persisting AI-generated tests,
+and processing student submissions for all four language skills.
+"""
+
 import logging
 from django.db import transaction
 from .models import Test, Question, Option, StudentAnswer, Result, Evaluation
@@ -7,10 +14,25 @@ from core.exceptions import AIServiceError
 logger = logging.getLogger(__name__)
 
 class TestingService:
+    """
+    Service for managing the lifecycle of English proficiency tests.
+    """
     def __init__(self):
+        """
+        Initializes the service and its AI dependencies.
+        """
         self.ai_service = AIServiceFactory.create_standard_service()
 
     def _persist_test_dto(self, dto):
+        """
+        Persists a TestDTO and its questions/options to the database.
+
+        Args:
+            dto: The TestDTO containing test content and questions.
+
+        Returns:
+            int: The ID of the newly created Test record.
+        """
         with transaction.atomic():
             test = Test.objects.create(
                 test_name=dto.name,
@@ -33,6 +55,15 @@ class TestingService:
             return test.test_id
 
     def start_dynamic_test_session(self, session):
+        """
+        Generates and prepares a dynamic test session for a student.
+
+        Args:
+            session: The Django session object to store test state.
+
+        Returns:
+            bool: True if the session was successfully started, False otherwise.
+        """
         try:
             comp_test = self.ai_service.generate_comprehensive_test()
             listening_tests = self.ai_service.generate_listening_test()
@@ -55,6 +86,19 @@ class TestingService:
             return False
 
     def process_mcq_submission(self, user, test_id, student_id, answers_dict, skill):
+        """
+        Processes a multiple-choice question submission (Reading/Listening).
+
+        Args:
+            user: The User instance submitting the answers.
+            test_id: ID of the test being taken.
+            student_id: ID of the Student profile.
+            answers_dict: Dictionary of submitted answers.
+            skill: The skill being tested ('reading' or 'listening').
+
+        Returns:
+            float: The final score for this test.
+        """
         test = Test.objects.get(test_id=test_id)
         questions = test.questions.all()
         correct_count = 0
@@ -87,6 +131,18 @@ class TestingService:
         return final_score
 
     def process_writing_submission(self, user, test_id, student_id, essay_text):
+        """
+        Processes and evaluates a writing test submission.
+
+        Args:
+            user: The User instance.
+            test_id: ID of the writing test.
+            student_id: ID of the Student profile.
+            essay_text: The student's essay content.
+
+        Returns:
+            dict: AI evaluation results including score and feedback.
+        """
         test = Test.objects.get(test_id=test_id)
         question, _ = Question.objects.get_or_create(
             test=test,
@@ -120,6 +176,19 @@ class TestingService:
         return evaluation
 
     def process_speaking_submission(self, user, test_id, student_id, transcription, accuracy):
+        """
+        Processes and records a speaking test submission.
+
+        Args:
+            user: The User instance.
+            test_id: ID of the speaking test.
+            student_id: ID of the Student profile.
+            transcription: The transcribed text from the student's speech.
+            accuracy: The accuracy score (0-100) provided by the client/AI.
+
+        Returns:
+            float: The accuracy score.
+        """
         test = Test.objects.get(test_id=test_id)
         question, _ = Question.objects.get_or_create(
             test=test,

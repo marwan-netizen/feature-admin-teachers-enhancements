@@ -1,3 +1,10 @@
+"""
+Interface layer (Views) for the Testing module.
+
+Handles the user interface for taking tests, submitting answers,
+and viewing results.
+"""
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
 from .models import Test, Result
@@ -10,14 +17,31 @@ logger = logging.getLogger(__name__)
 testing_service = TestingService()
 
 def get_student_id(request):
+    """
+    Helper to get the student profile ID for the current authenticated user.
+
+    Args:
+        request: HTTP request object.
+
+    Returns:
+        int or None: Student ID if found, otherwise None.
+    """
     if not request.user.is_authenticated: return None
     student = Student.objects.filter(user=request.user).first()
     return student.student_id if student else None
 
 def test_instructions(request):
+    """
+    Renders the test instructions page.
+    """
     return render(request, 'testing/instructions.html')
 
 def start_ai(request):
+    """
+    Initiates a new AI-powered test session.
+
+    Redirects to the first skill (Reading) after setting up the session.
+    """
     if not request.user.is_authenticated:
         return redirect('accounts:login')
 
@@ -41,9 +65,15 @@ def start_ai(request):
 
 # Reading
 def reading_start(request):
+    """
+    Entry point for the Reading portion of the test.
+    """
     return redirect('testing:reading_q1')
 
 def reading_q1(request):
+    """
+    Renders the reading passage and its associated questions.
+    """
     test_id = request.session.get('dynamic_test_ids', {}).get('reading')
     if not test_id:
         test = Test.objects.filter(skill='reading').first()
@@ -56,6 +86,9 @@ def reading_q1(request):
     return render(request, 'testing/reading_q1.html')
 
 def submit_reading(request, q):
+    """
+    Handles submission of reading test answers.
+    """
     student_id = get_student_id(request)
     if not student_id: return redirect('accounts:login')
 
@@ -71,10 +104,16 @@ def submit_reading(request, q):
     return redirect('testing:reading_done')
 
 def reading_done(request):
+    """
+    Renders the completion page for the reading section.
+    """
     return render(request, 'testing/reading_done.html')
 
 # Listening
 def listening_start(request):
+    """
+    Renders the listening test interface.
+    """
     test_id = request.session.get('dynamic_test_ids', {}).get('listening')
     if not test_id:
         test = Test.objects.filter(skill='listening').first()
@@ -87,6 +126,9 @@ def listening_start(request):
     return render(request, 'testing/listening_q1.html')
 
 def submit_listening(request, q):
+    """
+    Handles submission of listening test answers.
+    """
     student_id = get_student_id(request)
     if not student_id: return redirect('accounts:login')
 
@@ -102,10 +144,16 @@ def submit_listening(request, q):
     return redirect('testing:listening_done')
 
 def listening_done(request):
+    """
+    Renders the completion page for the listening section.
+    """
     return render(request, 'testing/listening_done.html')
 
 # Writing
 def writing_start(request):
+    """
+    Renders the writing test topic and input area.
+    """
     test_id = request.session.get('dynamic_test_ids', {}).get('writing')
     if not test_id:
         test = Test.objects.filter(skill='writing').first()
@@ -117,6 +165,9 @@ def writing_start(request):
     return render(request, 'testing/writing_q1.html')
 
 def submit_writing(request):
+    """
+    Handles submission and AI evaluation of the writing test.
+    """
     student_id = get_student_id(request)
     if not student_id: return redirect('accounts:login')
 
@@ -135,10 +186,16 @@ def submit_writing(request):
     return redirect('testing:writing_done')
 
 def writing_done(request):
+    """
+    Renders the completion page for the writing section.
+    """
     return render(request, 'testing/writing_done.html')
 
 # Speaking
 def speaking_start(request):
+    """
+    Renders the speaking test passage for the student to read.
+    """
     test_id = request.session.get('dynamic_test_ids', {}).get('speaking')
     if not test_id:
         test = Test.objects.filter(skill='speaking').first()
@@ -150,6 +207,9 @@ def speaking_start(request):
     return render(request, 'testing/speaking_q1.html')
 
 def submit_speaking(request):
+    """
+    Handles submission of the speaking test transcription and accuracy score.
+    """
     student_id = get_student_id(request)
     if not student_id: return redirect('accounts:login')
 
@@ -168,9 +228,15 @@ def submit_speaking(request):
     return redirect('testing:results')
 
 def speaking_done(request):
+    """
+    Renders the completion page for the speaking section.
+    """
     return render(request, 'testing/speaking_done.html')
 
 # Results
 def results(request):
+    """
+    Displays the consolidated results for all tests taken by the user.
+    """
     results = Result.objects.filter(user=request.user).select_related('test')
     return render(request, 'testing/results.html', {'results': results})

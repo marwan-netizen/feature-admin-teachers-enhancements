@@ -1,8 +1,18 @@
+"""
+Database models for the Testing module.
+
+Defines the structure for tests, questions, options, student answers,
+and their subsequent evaluations and results.
+"""
+
 from django.db import models
 from accounts.models import User, Student, Teacher
 from core.models import SoftDeleteModel
 
 class Test(SoftDeleteModel):
+    """
+    Represents a specific English proficiency test (e.g., 'Beginner Reading').
+    """
     test_id = models.AutoField(primary_key=True)
     test_name = models.CharField(max_length=255)
     level = models.CharField(max_length=50)
@@ -18,6 +28,9 @@ class Test(SoftDeleteModel):
         db_table = 'test'
 
 class Question(SoftDeleteModel):
+    """
+    Represents a question within a test.
+    """
     question_id = models.AutoField(primary_key=True)
     test = models.ForeignKey(Test, on_delete=models.CASCADE, related_name='questions')
     question_text = models.TextField()
@@ -31,6 +44,9 @@ class Question(SoftDeleteModel):
         db_table = 'questions'
 
 class Option(SoftDeleteModel):
+    """
+    Represents a multiple-choice option for a question.
+    """
     option_id = models.AutoField(primary_key=True)
     question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='options')
     option_text = models.CharField(max_length=255)
@@ -43,6 +59,9 @@ class Option(SoftDeleteModel):
         db_table = 'options'
 
 class StudentAnswer(SoftDeleteModel):
+    """
+    Records a student's answer to a specific question.
+    """
     answer_id = models.AutoField(primary_key=True)
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
     question = models.ForeignKey(Question, on_delete=models.CASCADE)
@@ -56,6 +75,9 @@ class StudentAnswer(SoftDeleteModel):
         db_table = 'dent_answer'
 
 class Result(SoftDeleteModel):
+    """
+    Stores the final score for a user on a specific test.
+    """
     result_id = models.AutoField(primary_key=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     test = models.ForeignKey(Test, on_delete=models.CASCADE)
@@ -68,6 +90,9 @@ class Result(SoftDeleteModel):
         db_table = 'result'
 
 class Evaluation(SoftDeleteModel):
+    """
+    Stores AI-generated feedback and score for open-ended answers.
+    """
     ai_eval_id = models.AutoField(primary_key=True)
     answer = models.ForeignKey(StudentAnswer, on_delete=models.CASCADE)
     ai_score = models.FloatField()

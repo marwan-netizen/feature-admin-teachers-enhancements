@@ -1,3 +1,9 @@
+"""
+Interface layer (Views) for the Accounts module.
+
+Handles user registration, login, logout, and account-related UI.
+"""
+
 from django.shortcuts import render, redirect
 from django.contrib.auth import login as auth_login, authenticate, logout as auth_logout
 from django.contrib.auth.hashers import make_password
@@ -5,14 +11,23 @@ from django.utils.crypto import get_random_string
 from .models import User, Student
 
 def info_account(request):
+    """
+    Renders the simplified registration page.
+    """
     return render(request, 'accounts/register.html')
 
 def account_selection(request):
+    """
+    Renders the account selection/info page.
+    """
     return render(request, 'accounts/info_account.html')
 
 def account_store(request):
     """
-    Custom registration/login matching Laravel's logic.
+    Handles student registration and automatic login.
+
+    This matches legacy Laravel logic where students are registered and
+    immediately logged in without a manual password entry in the first step.
     """
     if request.method == 'POST':
         first_name = request.POST.get('first_name')
@@ -40,6 +55,9 @@ def account_store(request):
     return redirect('accounts:info_account')
 
 def user_login(request):
+    """
+    Handles standard user authentication and redirection based on role.
+    """
     if request.method == 'POST':
         email = request.POST.get('email')
         password = request.POST.get('password')
@@ -58,5 +76,8 @@ def user_login(request):
     return render(request, 'accounts/login.html')
 
 def logout(request):
+    """
+    Logs out the current user and redirects to the index page.
+    """
     auth_logout(request)
     return redirect('core:index')
