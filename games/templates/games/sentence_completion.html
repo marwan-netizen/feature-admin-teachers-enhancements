@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <h1 class="text-3xl font-bold mb-8 text-center">Sentence Completion</h1>
+
+    <div class="space-y-8">
+        {% for ex in exercises %}
+            <div class="bg-white p-6 rounded-xl shadow-md border" id="ex-{{ forloop.index }}">
+                <p class="text-xl mb-6 text-gray-800 leading-relaxed">{{ ex.sentence }}</p>
+                <div class="grid grid-cols-2 gap-4">
+                    {% for option in ex.options %}
+                        <button onclick="checkAnswer(this, '{{ ex.correct_answer }}', 'ex-{{ forloop.parentloop.index }}')"
+                                class="p-3 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition font-medium">
+                            {{ option }}
+                        </button>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+    function checkAnswer(btn, correct, containerId) {
+        const container = document.getElementById(containerId);
+        const buttons = container.querySelectorAll('button');
+
+        buttons.forEach(b => b.disabled = true);
+
+        if (btn.innerText.trim().toLowerCase() === correct.toLowerCase()) {
+            btn.classList.add('bg-green-500', 'text-white', 'border-green-500');
+            btn.classList.remove('hover:bg-blue-50');
+        } else {
+            btn.classList.add('bg-red-500', 'text-white', 'border-red-500');
+            // Show correct answer
+            buttons.forEach(b => {
+                if (b.innerText.trim().toLowerCase() === correct.toLowerCase()) {
+                    b.classList.add('bg-green-200', 'border-green-500');
+                }
+            });
+        }
+    }
+</script>
+{% endblock %}

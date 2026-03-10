@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <h1 class="text-3xl font-bold mb-6">Vocabulary Lessons</h1>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {% for lesson in lessons %}
+            <div class="bg-white p-6 rounded-2xl shadow-md border hover:border-blue-500 transition">
+                <span class="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded uppercase mb-2">{{ lesson.level }}</span>
+                <h3 class="text-xl font-bold mb-2">{{ lesson.title }}</h3>
+                <p class="text-sm text-gray-600 mb-6">{{ lesson.description }}</p>
+                <a href="{% url 'vocabulary:lesson_detail' lesson.pk %}" class="bg-blue-600 text-white px-4 py-2 rounded font-bold hover:bg-blue-700 block text-center">Start Lesson</a>
+            </div>
+        {% empty %}
+            <p class="text-gray-500 italic">No lessons available yet.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

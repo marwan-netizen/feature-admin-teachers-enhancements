@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-lg mx-auto text-center">
+    <h1 class="text-3xl font-bold mb-8">Pronunciation Practice</h1>
+    <div class="bg-white p-12 rounded-2xl shadow-lg">
+        <p class="text-sm text-gray-500 uppercase tracking-widest mb-2">Repeat this word:</p>
+        <h2 class="text-5xl font-black text-blue-600 mb-8" id="target-word">{{ word }}</h2>
+
+        <button id="start-record" class="bg-red-500 hover:bg-red-600 text-white p-6 rounded-full shadow-lg transition-transform active:scale-95">
+            <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"></path><path d="M19 10v1a7 7 0 01-14 0v-1m14 0a9 9 0 01-18 0v-1m18 0h-2m-16 0H3m14 1a7 7 0 01-7 7 7 7 0 01-7-7"></path></svg>
+        </button>
+
+        <p id="status" class="mt-6 text-gray-600 font-medium">Click the microphone to start</p>
+        <div id="result" class="mt-4 hidden p-4 rounded-lg"></div>
+    </div>
+</div>
+
+<script>
+    const startBtn = document.getElementById('start-record');
+    const status = document.getElementById('status');
+    const resultDiv = document.getElementById('result');
+    const targetWord = "{{ word }}".toLowerCase();
+
+    if ('webkitSpeechRecognition' in window) {
+        const recognition = new webkitSpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = 'en-US';
+
+        startBtn.onclick = () => {
+            recognition.start();
+            status.innerText = "Listening...";
+            startBtn.classList.add('animate-pulse');
+        };
+
+        recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript.toLowerCase();
+            status.innerText = "Processing...";
+            startBtn.classList.remove('animate-pulse');
+
+            resultDiv.classList.remove('hidden', 'bg-green-100', 'bg-red-100');
+            if (transcript.includes(targetWord)) {
+                resultDiv.innerHTML = `<p class='text-green-700 font-bold text-xl'>Perfect! You said: "${transcript}"</p>`;
+                resultDiv.classList.add('bg-green-100');
+            } else {
+                resultDiv.innerHTML = `<p class='text-red-700 font-bold'>Try again. We heard: "${transcript}"</p>`;
+                resultDiv.classList.add('bg-red-100');
+            }
+        };
+
+        recognition.onerror = () => {
+            status.innerText = "Error occurred. Try again.";
+            startBtn.classList.remove('animate-pulse');
+        };
+    } else {
+        status.innerText = "Speech recognition is not supported in this browser.";
+        startBtn.disabled = true;
+    }
+</script>
+{% endblock %}
