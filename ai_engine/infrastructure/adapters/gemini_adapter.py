@@ -1,3 +1,7 @@
+"""
+Google Gemini API adapter for evaluation.
+"""
+
 import os
 import json
 import logging
@@ -7,13 +11,29 @@ from ai_engine.domain.interfaces import EvaluationProvider
 logger = logging.getLogger(__name__)
 
 class GeminiProvider(EvaluationProvider):
+    """
+    Concrete implementation of EvaluationProvider using Google's Gemini API.
+    """
     def __init__(self):
+        """
+        Initializes and configures the Gemini generative model.
+        """
         self.api_key = os.getenv('GEMINI_API_KEY')
         if self.api_key:
             genai.configure(api_key=self.api_key)
             self.model = genai.GenerativeModel('gemini-1.5-flash-latest')
 
     def evaluate(self, text: str, skill: str) -> dict:
+        """
+        Evaluates student input using Gemini 1.5.
+
+        Args:
+            text: The student's text response.
+            skill: The skill being evaluated ('writing' or 'speaking').
+
+        Returns:
+            dict: A dictionary containing 'score' and 'feedback'.
+        """
         if not self.api_key:
             return {'score': 75, 'feedback': 'Mock feedback (API Key missing)'}
 

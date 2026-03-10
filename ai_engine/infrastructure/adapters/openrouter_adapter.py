@@ -1,3 +1,7 @@
+"""
+OpenRouter adapter for text generation and TTS.
+"""
+
 import os
 import json
 import logging
@@ -10,11 +14,32 @@ from ai_engine.domain.interfaces import TextGenerationProvider, TTSProvider
 logger = logging.getLogger(__name__)
 
 class OpenRouterProvider(TextGenerationProvider, TTSProvider):
+    """
+    Concrete implementation of TextGenerationProvider and TTSProvider via OpenRouter.
+    """
     def __init__(self):
+        """
+        Initializes the OpenRouter provider with API credentials.
+        """
         self.api_key = os.getenv('OPENROUTER_API_KEY')
         self.url = 'https://openrouter.ai/api/v1/chat/completions'
 
     def generate(self, prompt: str, system_prompt: str = "", json_mode: bool = False) -> str:
+        """
+        Generates text using OpenRouter's meta-llama model.
+
+        Args:
+            prompt: The user prompt.
+            system_prompt: Optional system instructions.
+            json_mode: Whether to request JSON output.
+
+        Returns:
+            str: The generated content.
+
+        Raises:
+            ValueError: If the OpenRouter API key is missing.
+            Exception: If the API request fails.
+        """
         if not self.api_key:
             logger.error("OpenRouter API key is missing.")
             raise ValueError("OpenRouter API key is missing.")
@@ -34,6 +59,15 @@ class OpenRouterProvider(TextGenerationProvider, TTSProvider):
             raise
 
     def text_to_speech(self, text: str) -> str:
+        """
+        Converts text to speech using Google Translate TTS (legacy behavior).
+
+        Args:
+            text: The text to convert to audio.
+
+        Returns:
+            str: Relative URL to the generated MP3 file, or empty string if failed.
+        """
         # Implementation using Google Translate TTS as in original code
         encoded_text = urllib.parse.quote(text[:500])
         audio_url = f"https://translate.google.com/translate_tts?ie=UTF-8&client=gtx&q={encoded_text}&tl=en-US"

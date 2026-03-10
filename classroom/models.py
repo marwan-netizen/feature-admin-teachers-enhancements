@@ -1,8 +1,18 @@
+"""
+Database models for the Classroom module.
+
+Defines the structure for classes, enrollments, assignments, submissions,
+online sessions, and grades.
+"""
+
 from django.db import models
 from accounts.models import User, Student, Teacher
 from core.models import SoftDeleteModel
 
 class Classes(SoftDeleteModel):
+    """
+    Represents a virtual class or course.
+    """
     class_id = models.AutoField(primary_key=True)
     classes_name = models.CharField(max_length=50)
     teacher = models.ForeignKey(Teacher, on_delete=models.SET_NULL, null=True, blank=True)
@@ -15,7 +25,10 @@ class Classes(SoftDeleteModel):
     class Meta:
         db_table = 'classes'
 
-class ClassStudent(models.Model): # Link table usually doesn't need soft delete, but we can add it for consistency if desired.
+class ClassStudent(models.Model):
+    """
+    Link table for student enrollment in classes.
+    """
     classes = models.ForeignKey(Classes, on_delete=models.CASCADE)
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -26,6 +39,9 @@ class ClassStudent(models.Model): # Link table usually doesn't need soft delete,
         unique_together = ('classes', 'student')
 
 class OnlineSession(SoftDeleteModel):
+    """
+    Represents a scheduled Jitsi video session.
+    """
     session_id = models.AutoField(primary_key=True)
     class_info = models.ForeignKey(Classes, on_delete=models.CASCADE, db_column='class_id')
     teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE)
@@ -43,6 +59,9 @@ class OnlineSession(SoftDeleteModel):
         db_table = 'online_sessions'
 
 class Assignment(SoftDeleteModel):
+    """
+    Represents a task assigned to students in a class.
+    """
     class_info = models.ForeignKey(Classes, on_delete=models.CASCADE, db_column='class_id')
     teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE)
     title = models.CharField(max_length=255)
@@ -57,6 +76,9 @@ class Assignment(SoftDeleteModel):
         db_table = 'assignments'
 
 class AssignmentAttachment(SoftDeleteModel):
+    """
+    Represents a file attached to an assignment.
+    """
     assignment = models.ForeignKey(Assignment, on_delete=models.CASCADE, related_name='attachments')
     file_path = models.CharField(max_length=255)
     file_name = models.CharField(max_length=255)
@@ -68,6 +90,9 @@ class AssignmentAttachment(SoftDeleteModel):
         db_table = 'assignment_attachments'
 
 class AssignmentSubmission(SoftDeleteModel):
+    """
+    Represents a student's response to an assignment.
+    """
     assignment = models.ForeignKey(Assignment, on_delete=models.CASCADE, related_name='submissions')
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
     status = models.CharField(max_length=20, default='pending')
@@ -81,6 +106,9 @@ class AssignmentSubmission(SoftDeleteModel):
         db_table = 'assignment_submissions'
 
 class SubmissionVersion(SoftDeleteModel):
+    """
+    Represents a specific version of a student's submission.
+    """
     submission = models.ForeignKey(AssignmentSubmission, on_delete=models.CASCADE, related_name='versions')
     content = models.TextField(null=True, blank=True)
     file_path = models.CharField(max_length=255, null=True, blank=True)
@@ -94,6 +122,9 @@ class SubmissionVersion(SoftDeleteModel):
         db_table = 'submission_versions'
 
 class Grade(SoftDeleteModel):
+    """
+    Consolidated grade records for students.
+    """
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     class_info = models.ForeignKey(Classes, on_delete=models.CASCADE, db_column='class_id')
     midterm = models.IntegerField(null=True, blank=True)

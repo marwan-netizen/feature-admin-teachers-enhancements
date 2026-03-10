@@ -1,3 +1,10 @@
+"""
+Interface layer (Views) for the Classroom module.
+
+Handles the teacher and student dashboards, assignment management,
+grading, and online session creation.
+"""
+
 from django.shortcuts import render, redirect, get_object_or_404
 from .models import Classes, OnlineSession, Assignment, AssignmentSubmission, ClassStudent
 from accounts.models import Teacher, Student, User
@@ -9,6 +16,9 @@ logger = logging.getLogger(__name__)
 classroom_service = ClassroomService()
 
 def teacher_dashboard(request):
+    """
+    Renders the teacher-specific dashboard with classes, sessions, and assignments.
+    """
     if not request.user.is_authenticated or request.user.role != 'teacher':
         return redirect('accounts:login')
 
@@ -24,6 +34,9 @@ def teacher_dashboard(request):
     })
 
 def developer_dashboard(request):
+    """
+    Renders the administrative/developer dashboard for system oversight.
+    """
     if not request.user.is_authenticated or request.user.role not in ['admin', 'developer']:
         return redirect('accounts:login')
 
@@ -38,6 +51,9 @@ def developer_dashboard(request):
     })
 
 def create_online_session(request):
+    """
+    Handles the creation of a new online session via the classroom service.
+    """
     if request.method == 'POST':
         if not request.user.is_authenticated or request.user.role != 'teacher':
             return redirect('accounts:login')
@@ -53,6 +69,9 @@ def create_online_session(request):
     return redirect('classroom:teacher_dashboard')
 
 def delete_user(request, user_id):
+    """
+    Handles soft deletion of a user account (Admin only).
+    """
     if not request.user.is_authenticated or request.user.role not in ['admin', 'developer']:
         return redirect('accounts:login')
 
@@ -61,6 +80,9 @@ def delete_user(request, user_id):
     return redirect('classroom:developer_dashboard')
 
 def create_assignment(request):
+    """
+    Handles the creation of a new assignment via the classroom service.
+    """
     if request.method == 'POST':
         if not request.user.is_authenticated or request.user.role != 'teacher':
             return redirect('accounts:login')
@@ -77,6 +99,9 @@ def create_assignment(request):
     return redirect('classroom:teacher_dashboard')
 
 def student_assignments(request):
+    """
+    Displays all assignments for classes the current student is enrolled in.
+    """
     if not request.user.is_authenticated or request.user.role != 'student':
         return redirect('accounts:login')
 
@@ -87,6 +112,9 @@ def student_assignments(request):
     return render(request, 'classroom/student_assignments.html', {'assignments': assignments})
 
 def submit_assignment(request, assignment_id):
+    """
+    Handles student submission of an assignment.
+    """
     if request.method == 'POST':
         classroom_service.submit_assignment(
             student_user=request.user,
@@ -98,6 +126,9 @@ def submit_assignment(request, assignment_id):
     return redirect('classroom:student_assignments')
 
 def grade_submission(request, submission_id):
+    """
+    Handles teacher grading of an assignment submission.
+    """
     if request.method == 'POST':
         if request.user.role != 'teacher': return redirect('accounts:login')
 

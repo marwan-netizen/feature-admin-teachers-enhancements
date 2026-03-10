@@ -1,3 +1,10 @@
+"""
+Interface layer (Views) for the AI Engine module.
+
+Handles HTTP requests for AI-powered features like streaming explanations
+and chatbot interactions.
+"""
+
 import json
 import logging
 import requests
@@ -16,6 +23,15 @@ logger = logging.getLogger(__name__)
 ai_service = AIServiceFactory.create_standard_service()
 
 def ollama_explain(request):
+    """
+    Streams an English explanation for a test question using a local Ollama instance.
+
+    Args:
+        request: HTTP request object containing 'question', 'correct_answer', and 'student_answer'.
+
+    Returns:
+        StreamingHttpResponse: A stream of tokens explaining the mistake.
+    """
     if request.method != 'POST':
         return JsonResponse({'error': 'Method not allowed'}, status=405)
 
@@ -64,12 +80,37 @@ Explain briefly (3-4 sentences max) why the student's answer is wrong and why th
     return StreamingHttpResponse(event_stream(), content_type='text/event-stream')
 
 def generate_tests_groq():
+    """
+    Utility function to trigger comprehensive test generation via Groq.
+
+    Returns:
+        ComprehensiveTestDTO: The generated test suite.
+    """
     return ai_service.generate_comprehensive_test()
 
 def evaluate_with_gemini(text, skill):
+    """
+    Utility function to evaluate student input via Gemini.
+
+    Args:
+        text: The text to evaluate.
+        skill: The skill category.
+
+    Returns:
+        dict: Evaluation results.
+    """
     return ai_service.evaluate_response(text, skill)
 
 def chatbot_history(request):
+    """
+    Retrieves the chatbot message history for the authenticated user.
+
+    Args:
+        request: HTTP request object.
+
+    Returns:
+        JsonResponse: List of previous messages in the session.
+    """
     if not request.user.is_authenticated:
         return JsonResponse({'error': 'Unauthorized'}, status=401)
 
@@ -78,6 +119,15 @@ def chatbot_history(request):
     return JsonResponse(data, safe=False)
 
 def chatbot_send(request):
+    """
+    Handles sending a new message to the AI chatbot and getting a response.
+
+    Args:
+        request: HTTP request object containing 'message'.
+
+    Returns:
+        JsonResponse: The AI's response text.
+    """
     if request.method == 'POST':
         if not request.user.is_authenticated:
             return JsonResponse({'error': 'Unauthorized'}, status=401)
@@ -99,9 +149,24 @@ def chatbot_send(request):
     return JsonResponse({'error': 'Method not allowed'}, status=405)
 
 def strengthening_plan(request):
+    """
+    Renders the student's personal strengthening plan page.
+
+    Args:
+        request: HTTP request object.
+
+    Returns:
+        HttpResponse: Rendered HTML page.
+    """
     if not request.user.is_authenticated:
         return redirect('accounts:login')
     return render(request, 'core/strengthening.html')
 
 def generate_listening_openrouter():
+    """
+    Utility function to trigger listening test generation via OpenRouter.
+
+    Returns:
+        List[TestDTO]: List of generated listening tests.
+    """
     return ai_service.generate_listening_test()
