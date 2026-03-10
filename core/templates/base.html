@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}LingoPulse AI{% endblock %}</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <nav class="bg-blue-600 text-white p-4">
+        <div class="container mx-auto flex justify-between items-center">
+            <a href="/" class="text-2xl font-bold">LingoPulse AI</a>
+            <div class="space-x-4">
+                <a href="{% url 'vocabulary:dictionary' %}" class="hover:underline">Dictionary</a>
+                <a href="{% url 'vocabulary:wotd' %}" class="hover:underline">WOTD</a>
+                <a href="{% url 'vocabulary:lesson_list' %}" class="hover:underline">Lessons</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mx-auto mt-8 p-4">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="mt-12 p-8 bg-gray-800 text-white text-center">
+        <p>&copy; 2024 LingoPulse AI - Advanced English Learning Platform</p>
+    </footer>
+</body>
+</html>

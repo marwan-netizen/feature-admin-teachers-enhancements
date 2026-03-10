@@ -27,6 +27,17 @@ INSTALLED_APPS = [
     'testing',
     'classroom',
     'ai_engine',
+    'vocabulary',
+    'games',
+    'assessment',
+    'grammar_analysis',
+    'media_learning',
+    'adaptive_learning',
+    'analytics',
+    'django_htmx',
+    # 'django_lifecycle',
+    'django_filters',
+    'rest_framework_dataclasses',
 ]
 
 AUTH_USER_MODEL = 'accounts.User'
@@ -38,6 +49,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django_htmx.middleware.HtmxMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -129,3 +141,21 @@ LOGGING = {
 GROQ_API_KEY = env('GROQ_API_KEY', default='')
 GEMINI_API_KEY = env('GEMINI_API_KEY', default='')
 OPENROUTER_API_KEY = env('OPENROUTER_API_KEY', default='')
+
+# Celery Configuration
+CELERY_BROKER_URL = env('CELERY_BROKER_URL', default='redis://localhost:6379/0')
+CELERY_RESULT_BACKEND = env('CELERY_RESULT_BACKEND', default='redis://localhost:6379/0')
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = TIME_ZONE
+
+# API Keys for new integrations
+FREE_DICTIONARY_API_URL = "https://api.dictionaryapi.dev/api/v2/entries/en/"
+LINGUA_ROBOT_API_KEY = env('LINGUA_ROBOT_API_KEY', default='')
+WORDS_API_KEY = env('WORDS_API_KEY', default='')
+LANGUAGE_TOOL_API_URL = "https://api.languagetool.org/v2/check"
+PODCAST_INDEX_API_KEY = env('PODCAST_INDEX_API_KEY', default='')
+PODCAST_INDEX_API_SECRET = env('PODCAST_INDEX_API_SECRET', default='')
+OPEN_SUBTITLES_API_KEY = env('OPEN_SUBTITLES_API_KEY', default='')
+GOOGLE_BOOKS_API_KEY = env('GOOGLE_BOOKS_API_KEY', default='')

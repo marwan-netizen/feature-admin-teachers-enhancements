@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <h1 class="text-3xl font-bold mb-6">Podcast Listening Exercises</h1>
+
+    <form method="get" class="mb-8 flex gap-2">
+        <input type="text" name="q" value="{{ q }}" placeholder="Search English podcasts..." class="flex-1 p-2 border rounded">
+        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Search</button>
+    </form>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {% for pod in podcasts %}
+            <div class="bg-white p-4 rounded-xl shadow-md border flex gap-4">
+                {% if pod.thumbnail %}
+                    <img src="{{ pod.thumbnail }}" class="w-24 h-24 rounded-lg object-cover">
+                {% endif %}
+                <div class="flex-1">
+                    <h3 class="font-bold text-lg mb-1">{{ pod.title }}</h3>
+                    <p class="text-xs text-gray-500 mb-2">{{ pod.source }}</p>
+                    <p class="text-sm text-gray-600 line-clamp-2 mb-3">{{ pod.content }}</p>
+                    <div class="flex gap-2">
+                        <a href="{{ pod.url }}" target="_blank" class="text-blue-600 font-bold text-sm hover:underline">Listen Now</a>
+                        <button class="bg-indigo-50 text-indigo-700 px-2 py-1 rounded text-xs font-bold hover:bg-indigo-100">Practice Exercise</button>
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <p class="text-gray-500 italic">No podcasts found for "{{ q }}".</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

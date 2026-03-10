@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <h1 class="text-3xl font-bold mb-6">Student Book Library</h1>
+
+    <form method="get" class="mb-8 flex gap-2">
+        <input type="text" name="q" value="{{ q }}" placeholder="Search English books..." class="flex-1 p-2 border rounded">
+        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Search</button>
+    </form>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {% for book in books %}
+            <div class="bg-white p-4 rounded-xl shadow-md border flex gap-4">
+                {% if book.thumbnail %}
+                    <img src="{{ book.thumbnail }}" class="w-32 h-48 rounded-lg object-cover">
+                {% endif %}
+                <div class="flex-1">
+                    <h3 class="font-bold text-lg mb-1 leading-tight">{{ book.title }}</h3>
+                    <p class="text-xs text-gray-500 mb-2">{{ book.source }}</p>
+                    <p class="text-sm text-gray-600 line-clamp-4 mb-4 leading-relaxed">{{ book.content }}</p>
+                    <div class="flex gap-2">
+                        <a href="{{ book.url }}" target="_blank" class="bg-blue-600 text-white px-4 py-2 rounded text-sm font-bold hover:bg-blue-700">View Book</a>
+                        <button class="bg-indigo-50 text-indigo-700 px-4 py-2 rounded text-sm font-bold hover:bg-indigo-100">Add to Library</button>
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <p class="text-gray-500 italic">No books found for "{{ q }}".</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}Smart Dictionary - LingoPulse AI{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <h1 class="text-3xl font-bold mb-6">Smart Dictionary</h1>
+
+    <form action="." method="get" class="mb-8 flex gap-2">
+        <input type="text" name="q" value="{{ query }}" placeholder="Search for a word..." class="flex-1 p-2 border rounded shadow-sm">
+        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Search</button>
+    </form>
+
+    {% if word %}
+        <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h2 class="text-4xl font-bold text-blue-800">{{ word.word|title }}</h2>
+                    <p class="text-gray-500 text-xl">{{ word.phonetic }}</p>
+                </div>
+                {% if word.audio_url %}
+                <button onclick="new Audio('{{ word.audio_url }}').play()" class="bg-gray-200 p-2 rounded-full hover:bg-gray-300">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path></svg>
+                </button>
+                {% endif %}
+            </div>
+
+            <div class="mt-6 space-y-4">
+                {% for definition in word.definitions.all %}
+                    <div>
+                        <span class="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded uppercase">{{ definition.part_of_speech }}</span>
+                        <p class="mt-1 text-gray-800">{{ definition.definition_text }}</p>
+                        {% if definition.example_sentence %}
+                            <p class="mt-2 text-gray-600 italic">"{{ definition.example_sentence }}"</p>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+
+            <div class="mt-8 pt-6 border-t">
+                <button hx-post="{% url 'vocabulary:bookmark_toggle' word.id %}"
+                        hx-swap="none"
+                        class="text-blue-600 hover:text-blue-800 flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path></svg>
+                    Bookmark Word
+                </button>
+            </div>
+        </div>
+
+        {% if extra %}
+        <div class="grid grid-cols-2 gap-4">
+            <div class="bg-white p-4 rounded-lg shadow-sm border">
+                <h3 class="font-bold text-lg mb-2">Synonyms</h3>
+                <div class="flex flex-wrap gap-2">
+                    {% for syn in extra.synonyms %}
+                        <a href="?q={{ syn.word }}" class="text-sm bg-gray-100 px-2 py-1 rounded hover:bg-gray-200">{{ syn.word }}</a>
+                    {% empty %}
+                        <p class="text-gray-500 text-sm">No synonyms found.</p>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow-sm border">
+                <h3 class="font-bold text-lg mb-2">Antonyms</h3>
+                <div class="flex flex-wrap gap-2">
+                    {% for ant in extra.antonyms %}
+                        <a href="?q={{ ant.word }}" class="text-sm bg-gray-100 px-2 py-1 rounded hover:bg-gray-200">{{ ant.word }}</a>
+                    {% empty %}
+                        <p class="text-gray-500 text-sm">No antonyms found.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+    {% elif query %}
+        <p class="text-center text-gray-500 mt-12">No results found for "{{ query }}".</p>
+    {% endif %}
+</div>
+{% endblock %}
