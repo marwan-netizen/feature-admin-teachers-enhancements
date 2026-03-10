@@ -33,21 +33,30 @@ class LanguageToolService(BaseExternalService):
             logger.error(f"Error checking text with LanguageTool: {e}")
         return GrammarAnalysisDTO(text=text, issues=[])
 
+from django.core.cache import cache
+
 class WikipediaService(BaseExternalService):
     BASE_URL = "https://en.wikipedia.org/api/rest_v1/page/summary/"
 
     def get_summary(self, title: str) -> Optional[MediaContentDTO]:
+        cache_key = self._get_cache_key("wiki", title)
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            return MediaContentDTO.model_validate(cached_data)
+
         try:
             response = self.client.get(f"{self.BASE_URL}{title}")
             if response.status_code == 200:
                 data = response.json()
-                return MediaContentDTO(
+                dto = MediaContentDTO(
                     title=data['title'],
                     content=data['extract'],
                     url=data['content_urls']['desktop']['page'],
                     thumbnail=data.get('thumbnail', {}).get('source'),
                     source="Wikipedia"
                 )
+                cache.set(cache_key, dto.model_dump(), timeout=604800) # 1 week
+                return dto
         except Exception as e:
             logger.error(f"Error fetching Wikipedia summary for {title}: {e}")
         return None

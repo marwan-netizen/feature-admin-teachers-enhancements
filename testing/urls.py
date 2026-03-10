@@ -5,6 +5,7 @@ app_name = 'testing'
 
 urlpatterns = [
     path('test/start/', views.start_ai, name='start_ai'),
+    path('test/check-status/', views.check_session_status, name='check_status'),
     path('test-instructions/', views.test_instructions, name='test_instructions'),
 
     # Reading

@@ -38,16 +38,16 @@ def test_instructions(request):
 
 def start_ai(request):
     """
-    Initiates a new AI-powered test session.
-
-    Redirects to the first skill (Reading) after setting up the session.
+    Initiates a new AI-powered test session asynchronously.
     """
     if not request.user.is_authenticated:
         return redirect('accounts:login')
 
-    # Seed some session data even if generation fails so the flow can continue with static tests
-    if not testing_service.start_dynamic_test_session(request.session):
-        request.session['dynamic_tests_ready'] = False
+    task_id = testing_service.start_dynamic_test_session(request.session)
+    request.session.modified = True
+
+    if not task_id:
+        # Fallback to static tests if task fails to enqueue
         reading = Test.objects.filter(skill='reading').first()
         listening = Test.objects.filter(skill='listening').first()
         writing = Test.objects.filter(skill='writing').first()
@@ -59,9 +59,20 @@ def start_ai(request):
             'writing': writing.test_id if writing else None,
             'speaking': speaking.test_id if speaking else None,
         }
-        request.session.modified = True
+        request.session['dynamic_tests_ready'] = True
+        return redirect('testing:reading_start')
 
-    return redirect('testing:reading_start')
+    return render(request, 'testing/loading.html', {'task_id': task_id})
+
+def check_session_status(request):
+    """
+    HTMX endpoint to check if dynamic tests are ready.
+    """
+    ready = testing_service.check_test_session_status(request.session)
+    request.session.modified = True
+    if ready:
+        return JsonResponse({'status': 'ready', 'redirect_url': '/testing/reading/start/'})
+    return JsonResponse({'status': 'pending'})
 
 # Reading
 def reading_start(request):

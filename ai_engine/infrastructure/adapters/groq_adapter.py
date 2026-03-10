@@ -56,10 +56,12 @@ class GroqProvider(TextGenerationProvider):
         if json_mode:
             payload['response_format'] = {'type': 'json_object'}
 
+        from core.resilience import ai_generation_cb
         try:
-            response = requests.post(self.url, headers=headers, json=payload, timeout=30)
-            response.raise_for_status()
-            return response.json()['choices'][0]['message']['content']
+            with ai_generation_cb:
+                response = requests.post(self.url, headers=headers, json=payload, timeout=30)
+                response.raise_for_status()
+                return response.json()['choices'][0]['message']['content']
         except Exception as e:
             logger.error(f"Groq generation failed: {str(e)}")
             raise

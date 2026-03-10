@@ -10,6 +10,8 @@ from django.db import transaction
 from .models import Test, Question, Option, StudentAnswer, Result, Evaluation
 from ai_engine.application.factory import AIServiceFactory
 from core.exceptions import AIServiceError
+from celery import group
+from .tasks import generate_comprehensive_test_task, generate_listening_test_task, evaluate_writing_submission_task
 
 logger = logging.getLogger(__name__)
 
@@ -23,67 +25,53 @@ class TestingService:
         """
         self.ai_service = AIServiceFactory.create_standard_service()
 
-    def _persist_test_dto(self, dto):
-        """
-        Persists a TestDTO and its questions/options to the database.
-
-        Args:
-            dto: The TestDTO containing test content and questions.
-
-        Returns:
-            int: The ID of the newly created Test record.
-        """
-        with transaction.atomic():
-            test = Test.objects.create(
-                test_name=dto.name,
-                level=dto.level,
-                skill=dto.skill,
-                content=dto.content
-            )
-            for q_dto in dto.questions:
-                question = Question.objects.create(
-                    test=test,
-                    question_text=q_dto.text,
-                    question_type=q_dto.question_type
-                )
-                for o_dto in q_dto.options:
-                    Option.objects.create(
-                        question=question,
-                        option_text=o_dto.text,
-                        is_correct=o_dto.is_correct
-                    )
-            return test.test_id
-
     def start_dynamic_test_session(self, session):
         """
-        Generates and prepares a dynamic test session for a student.
+        Asynchronously generates and prepares a dynamic test session for a student.
 
         Args:
             session: The Django session object to store test state.
 
         Returns:
-            bool: True if the session was successfully started, False otherwise.
+            str: Task Group ID if the session was successfully started, None otherwise.
         """
         try:
-            comp_test = self.ai_service.generate_comprehensive_test()
-            listening_tests = self.ai_service.generate_listening_test()
+            # We use a group to parallelize generation of comprehensive and listening tests
+            job = group([
+                generate_comprehensive_test_task.s(),
+                generate_listening_test_task.s()
+            ])
+            result = job.apply_async()
 
-            session['dynamic_tests_ready'] = True
-            final_ids = {}
+            session['dynamic_tests_ready'] = False
+            session['dynamic_tests_task_id'] = result.id
+            return result.id
+        except Exception as e:
+            logger.error(f"Failed to start dynamic test session task: {str(e)}")
+            return None
 
-            final_ids['reading'] = self._persist_test_dto(comp_test.reading)
-            final_ids['writing'] = self._persist_test_dto(comp_test.writing)
-            final_ids['speaking'] = self._persist_test_dto(comp_test.speaking)
+    def check_test_session_status(self, session):
+        """
+        Checks the status of the background generation tasks and updates session if ready.
+        """
+        task_id = session.get('dynamic_tests_task_id')
+        if not task_id:
+            return False
 
-            if listening_tests:
-                first_listening_id = self._persist_test_dto(listening_tests[0])
-                final_ids['listening'] = first_listening_id
+        from celery.result import GroupResult
+        res = GroupResult.restore(task_id)
+        if res and res.ready():
+            results = res.get()
+            # results[0] is final_ids from comprehensive task
+            # results[1] is listening_id
+            final_ids = results[0]
+            if results[1]:
+                final_ids['listening'] = results[1]
 
             session['dynamic_test_ids'] = final_ids
+            session['dynamic_tests_ready'] = True
             return True
-        except AIServiceError as e:
-            logger.error(f"Failed to start dynamic test session: {str(e)}")
-            return False
+        return False
 
     def process_mcq_submission(self, user, test_id, student_id, answers_dict, skill):
         """
@@ -132,7 +120,7 @@ class TestingService:
 
     def process_writing_submission(self, user, test_id, student_id, essay_text):
         """
-        Processes and evaluates a writing test submission.
+        Asynchronously processes and evaluates a writing test submission.
 
         Args:
             user: The User instance.
@@ -141,39 +129,10 @@ class TestingService:
             essay_text: The student's essay content.
 
         Returns:
-            dict: AI evaluation results including score and feedback.
+            str: Task ID of the evaluation task.
         """
-        test = Test.objects.get(test_id=test_id)
-        question, _ = Question.objects.get_or_create(
-            test=test,
-            defaults={'question_text': 'Writing Essay', 'question_type': 'essay'}
-        )
-
-        try:
-            evaluation = self.ai_service.evaluate_response(essay_text, 'writing')
-        except AIServiceError as e:
-            logger.error(f"Evaluation failed in TestingService: {str(e)}")
-            evaluation = {'score': 0, 'feedback': 'Evaluation failed.'}
-
-        with transaction.atomic():
-            answer, _ = StudentAnswer.objects.update_or_create(
-                student_id=student_id,
-                question=question,
-                defaults={'answer_text': essay_text}
-            )
-            Evaluation.objects.update_or_create(
-                answer=answer,
-                defaults={
-                    'ai_score': evaluation.get('score', 0),
-                    'ai_feedback': evaluation.get('feedback', '')
-                }
-            )
-            Result.objects.update_or_create(
-                user=user,
-                test=test,
-                defaults={'final_score': evaluation.get('score', 0)}
-            )
-        return evaluation
+        task = evaluate_writing_submission_task.delay(user.user_id, test_id, student_id, essay_text)
+        return task.id
 
     def process_speaking_submission(self, user, test_id, student_id, transcription, accuracy):
         """

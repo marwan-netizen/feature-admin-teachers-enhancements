@@ -24,12 +24,14 @@ class FreeDictionaryService(BaseExternalService):
         if cached_data:
             return [WordDefinitionDTO.model_validate(d) for d in cached_data]
 
+        from core.resilience import external_api_cb
         try:
-            response = self.client.get(f"{self.BASE_URL}{word}")
-            if response.status_code == 200:
-                data = response.json()
-                cache.set(cache_key, data, timeout=86400)  # Cache for 24h
-                return [WordDefinitionDTO.model_validate(d) for d in data]
+            with external_api_cb:
+                response = self.client.get(f"{self.BASE_URL}{word}")
+                if response.status_code == 200:
+                    data = response.json()
+                    cache.set(cache_key, data, timeout=86400)  # Cache for 24h
+                    return [WordDefinitionDTO.model_validate(d) for d in data]
         except Exception as e:
             logger.error(f"Error fetching definition for {word} from FreeDictionary: {e}")
         return []
@@ -38,19 +40,33 @@ class DatamuseService(BaseExternalService):
     BASE_URL = "https://api.datamuse.com/words"
 
     def get_synonyms(self, word: str) -> List[SynonymAntonymDTO]:
+        cache_key = self._get_cache_key("datamuse_syn", word)
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            return [SynonymAntonymDTO.model_validate(d) for d in cached_data]
+
         try:
             response = self.client.get(f"{self.BASE_URL}?rel_syn={word}")
             if response.status_code == 200:
-                return [SynonymAntonymDTO.model_validate(item) for item in response.json()]
+                data = response.json()
+                cache.set(cache_key, data, timeout=86400)
+                return [SynonymAntonymDTO.model_validate(item) for item in data]
         except Exception as e:
             logger.error(f"Error fetching synonyms for {word} from Datamuse: {e}")
         return []
 
     def get_antonyms(self, word: str) -> List[SynonymAntonymDTO]:
+        cache_key = self._get_cache_key("datamuse_ant", word)
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            return [SynonymAntonymDTO.model_validate(d) for d in cached_data]
+
         try:
             response = self.client.get(f"{self.BASE_URL}?rel_ant={word}")
             if response.status_code == 200:
-                return [SynonymAntonymDTO.model_validate(item) for item in response.json()]
+                data = response.json()
+                cache.set(cache_key, data, timeout=86400)
+                return [SynonymAntonymDTO.model_validate(item) for item in data]
         except Exception as e:
             logger.error(f"Error fetching antonyms for {word} from Datamuse: {e}")
         return []

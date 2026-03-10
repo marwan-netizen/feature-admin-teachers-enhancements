@@ -31,32 +31,24 @@ class TestTestingService:
         user, student, test, _, _, _ = setup_data
         service = TestingService()
 
-        # Mock AIService
-        mocker.patch.object(service.ai_service, 'evaluate_response', return_value={'score': 90, 'feedback': 'Excellent'})
+        # Mock Task
+        mock_task = mocker.patch('testing.tasks.evaluate_writing_submission_task.delay')
+        mock_task.return_value.id = 'fake-task-id'
 
-        result = service.process_writing_submission(user, test.test_id, student.student_id, "Some essay content")
+        task_id = service.process_writing_submission(user, test.test_id, student.student_id, "Some essay content")
 
-        assert result['score'] == 90
-        assert Result.objects.get(user=user, test=test).final_score == 90
+        assert task_id == 'fake-task-id'
 
     def test_start_dynamic_test_session(self, mocker):
         service = TestingService()
 
-        mock_comp = ComprehensiveTestDTO(
-            reading=TestDTO(name="Reading", level="B", skill="reading", content="P", questions=[
-                QuestionDTO(text="Q", options=[OptionDTO(text="O", is_correct=True)])
-            ]),
-            writing=TestDTO(name="Writing", level="B", skill="writing", content="T"),
-            speaking=TestDTO(name="Speaking", level="B", skill="speaking", content="S")
-        )
-
-        mocker.patch.object(service.ai_service, 'generate_comprehensive_test', return_value=mock_comp)
-        mocker.patch.object(service.ai_service, 'generate_listening_test', return_value=[])
+        # Mock group and apply_async
+        mock_group = mocker.patch('testing.services.group')
+        mock_group.return_value.apply_async.return_value.id = 'fake-group-id'
 
         session = {}
-        success = service.start_dynamic_test_session(session)
+        task_id = service.start_dynamic_test_session(session)
 
-        assert success is True
-        assert session['dynamic_tests_ready'] is True
-        assert 'reading' in session['dynamic_test_ids']
-        assert Test.objects.filter(test_id=session['dynamic_test_ids']['reading']).exists()
+        assert task_id == 'fake-group-id'
+        assert session['dynamic_tests_ready'] is False
+        assert session['dynamic_tests_task_id'] == 'fake-group-id'

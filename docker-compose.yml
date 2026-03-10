@@ -1,21 +1,87 @@
 version: '3.8'
 
 services:
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      network: host
-    container_name: lingopulse_app
-    restart: unless-stopped
-    ports:
-      - "8000:80"
+  db:
+    image: postgres:15-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     environment:
-      - APP_ENV=local
-      - APP_DEBUG=true
-      - APP_URL=http://localhost:8000
-      - DB_CONNECTION=sqlite
-      # Make sure to point Ollama URL to host machine so Docker container can access it
-      - OLLAMA_URL=http://host.docker.internal:11434
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+      - POSTGRES_DB=lingopulse
+      - POSTGRES_USER=lingopulse
+      - POSTGRES_PASSWORD=lingopulse
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lingopulse"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build: .
+    command: gunicorn --bind 0.0.0.0:8000 --workers 4 --threads 2 --worker-class uvicorn.workers.UvicornWorker lingopulse.asgi:application
+    volumes:
+      - .:/app
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=False
+      - APP_KEY=production_secret_key_change_me
+      - DATABASE_URL=postgres://lingopulse:lingopulse@db:5432/lingopulse
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - REDIS_URL=redis://redis:6379/1
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker:
+    build: .
+    command: celery -A lingopulse worker --loglevel=info
+    volumes:
+      - .:/app
+      - media_volume:/app/media
+    environment:
+      - APP_KEY=production_secret_key_change_me
+      - DATABASE_URL=postgres://lingopulse:lingopulse@db:5432/lingopulse
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  beat:
+    build: .
+    command: celery -A lingopulse beat --loglevel=info
+    volumes:
+      - .:/app
+    environment:
+      - APP_KEY=production_secret_key_change_me
+      - DATABASE_URL=postgres://lingopulse:lingopulse@db:5432/lingopulse
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  redis_data:
+  static_volume:
+  media_volume:
