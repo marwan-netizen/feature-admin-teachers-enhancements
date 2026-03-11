@@ -1,6 +1,8 @@
 import os
 from pathlib import Path
 import environ
+import sentry_sdk
+from sentry_sdk.integrations.django import DjangoIntegration
 
 env = environ.Env(
     DEBUG=(bool, False)
@@ -12,20 +14,42 @@ if os.path.exists(os.path.join(BASE_DIR, '.env')):
 
 SECRET_KEY = env('APP_KEY')
 DEBUG = env.bool('DEBUG', default=False)
+
+if not DEBUG:
+    sentry_sdk.init(
+        dsn=env("SENTRY_DSN", default=""),
+        integrations=[DjangoIntegration()],
+        traces_sample_rate=1.0,
+        send_default_pii=True,
+    )
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['*'])
 
 INSTALLED_APPS = [
+    'daphne',
+    'unfold',
+    'unfold.contrib.filters',
+    'unfold.contrib.forms',
+    'unfold.contrib.import_export',
+    'unfold.contrib.guardian',
+    'unfold.contrib.simple_history',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    # 'two_factor',  # Disabled during development to avoid redirect loops in headless environments
+    # 'django_otp',
+    # 'django_otp.plugins.otp_static',
+    # 'django_otp.plugins.otp_totp',
     'rest_framework',
     'django_filters',
     'django_htmx',
     'django_prometheus',
     'drf_spectacular',
+    'import_export',
+    'guardian',
+    'simple_history',
     'core',
     'accounts',
     'testing',
@@ -39,12 +63,22 @@ INSTALLED_APPS = [
     'adaptive_learning',
     'analytics',
     'rest_framework_dataclasses',
+    'channels',
 ]
 
 AUTH_USER_MODEL = 'accounts.User'
 
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'guardian.backends.ObjectPermissionBackend',
+]
+
+LOGIN_URL = 'admin:login'
+LOGIN_REDIRECT_URL = 'admin:index'
+
 MIDDLEWARE = [
     'django_prometheus.middleware.PrometheusBeforeMiddleware',
+    'django_ratelimit.middleware.RatelimitMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'core.middleware.ExceptionHandlerMiddleware',
@@ -52,10 +86,12 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    # 'django_otp.middleware.OTPMiddleware',
     'django_htmx.middleware.HtmxMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django_prometheus.middleware.PrometheusAfterMiddleware',
+    'simple_history.middleware.HistoryRequestMiddleware',
 ]
 
 ROOT_URLCONF = 'lingopulse.urls'
@@ -77,6 +113,16 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'lingopulse.wsgi.application'
+ASGI_APPLICATION = 'lingopulse.asgi.application'
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [env('REDIS_URL', default='redis://localhost:6379/1')],
+        },
+    },
+}
 
 if env('DATABASE_URL', default=None):
     DATABASES = {
@@ -121,6 +167,83 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+
+UNFOLD = {
+    "SITE_TITLE": "LingoPulse Mission Control",
+    "SITE_HEADER": "LingoPulse AI",
+    "SITE_SYMBOL": "speed",
+    "SHOW_HISTORY": True,
+    "SHOW_VIEW_ON_SITE": True,
+    "COLORS": {
+        "primary": {
+            "50": "250 245 255",
+            "100": "243 232 255",
+            "200": "233 213 255",
+            "300": "216 180 254",
+            "400": "192 132 252",
+            "500": "168 85 247",
+            "600": "147 51 234",
+            "700": "126 34 206",
+            "800": "107 33 168",
+            "900": "88 28 135",
+            "950": "59 7 100",
+        },
+    },
+    "DASHBOARD_CALLBACK": "enterprise.services.dashboard.get_dashboard_data",
+    "SIDEBAR": {
+        "show_search": True,
+        "show_all_applications": False,
+        "navigation": [
+            {
+                "title": "Operational Intelligence",
+                "items": [
+                    {
+                        "title": "Dashboard",
+                        "icon": "dashboard",
+                        "link": "/admin/",
+                    },
+                    {
+                        "title": "AI Insights",
+                        "icon": "psychology",
+                        "link": "/admin/enterprise/ai-insights/",
+                    },
+                    {
+                        "title": "System Health",
+                        "icon": "health_and_safety",
+                        "link": "/admin/enterprise/health/",
+                    },
+                ],
+            },
+            {
+                "title": "Educational Core",
+                "items": [
+                    {"title": "Users", "icon": "person", "link": "/admin/accounts/user/"},
+                    {"title": "Classrooms", "icon": "school", "link": "/admin/classroom/classes/"},
+                    {"title": "Tests", "icon": "quiz", "link": "/admin/testing/test/"},
+                    {"title": "Vocabulary", "icon": "menu_book", "link": "/admin/vocabulary/word/"},
+                ],
+            },
+            {
+                "title": "Learning Modules",
+                "items": [
+                    {"title": "Games", "icon": "sports_esports", "link": "/admin/games/gamescore/"},
+                    {"title": "Media Learning", "icon": "movie", "link": "/admin/media_learning/mediabookmark/"},
+                    {"title": "Grammar", "icon": "spellcheck", "link": "/admin/grammar_analysis/learninggap/"},
+                    {"title": "Adaptive Plans", "icon": "settings_suggest", "link": "/admin/adaptive_learning/adaptiveplan/"},
+                ],
+            },
+            {
+                "title": "Platform Engineering",
+                "items": [
+                    {"title": "Analytics", "icon": "analytics", "link": "/admin/analytics/dailymetric/"},
+                    {"title": "AI Engine", "icon": "smart_toy", "link": "/admin/ai_engine/chatsession/"},
+                    {"title": "Audit Logs", "icon": "history_edu", "link": "/admin/core/activitylog/"},
+                    {"title": "Security", "icon": "shield", "link": "/admin/otp_totp/totpdevice/"},
+                ],
+            },
+        ],
+    },
+}
 
 # Security Settings
 CSRF_COOKIE_HTTPONLY = True
@@ -180,6 +303,9 @@ LOGGING = {
         'level': 'INFO',
     },
 }
+
+RATELIMIT_ENABLE = True
+RATELIMIT_USE_CACHE = 'default'
 
 # REST Framework Throttling
 REST_FRAMEWORK = {

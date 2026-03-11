@@ -1,0 +1,44 @@
+{% extends 'unfold/layouts/base.html' %}
+
+{% block content %}
+<div class="px-4 py-8">
+    <h1 class="text-2xl font-bold mb-6">Engineering Diagnostics</h1>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
+            <h3 class="text-sm font-medium text-gray-500 uppercase">CPU Usage</h3>
+            <p class="text-3xl font-bold" id="cpu-usage">{{ report.metrics.cpu_usage }}%</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
+            <h3 class="text-sm font-medium text-gray-500 uppercase">Memory Usage</h3>
+            <p class="text-3xl font-bold" id="memory-usage">{{ report.metrics.memory_usage }}%</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
+            <h3 class="text-sm font-medium text-gray-500 uppercase">System Status</h3>
+            <p class="text-3xl font-bold text-green-500">{{ report.status }}</p>
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+        <h2 class="text-xl font-bold mb-4">Detailed Infrastructure Metrics</h2>
+        <ul class="space-y-4">
+            <li class="flex justify-between border-b pb-2">
+                <span>Load Average (1m, 5m, 15m)</span>
+                <span class="font-mono">{{ report.metrics.load_avg }}</span>
+            </li>
+            <li class="flex justify-between border-b pb-2">
+                <span>Disk Usage</span>
+                <span>{{ report.metrics.disk_usage }}%</span>
+            </li>
+            <li class="flex justify-between border-b pb-2">
+                <span>Network I/O (Total)</span>
+                <span>{{ report.metrics.net_io|filesizeformat }}</span>
+            </li>
+            <li class="flex justify-between">
+                <span>Active Processes</span>
+                <span>{{ report.metrics.process_count }}</span>
+            </li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
