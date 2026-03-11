@@ -44,7 +44,10 @@ class UserManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
+from simple_history.models import HistoricalRecords
+
 class User(AbstractBaseUser, PermissionsMixin, SoftDeleteModel):
+    history = HistoricalRecords()
     """
     Custom User model for LingoPulse AI.
     """
