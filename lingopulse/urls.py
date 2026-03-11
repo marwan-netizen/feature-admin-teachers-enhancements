@@ -1,12 +1,18 @@
 from django.contrib import admin
 from django.urls import path, include
 from vocabulary.views import WordOfTheDayView
+from enterprise.services.audit import audit_log_view
+from enterprise.services.diagnostics import diagnostic_center_view
+from enterprise.ai.views import ai_insights_view
 
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 
 urlpatterns = [
     path('', include('django_prometheus.urls')),
     path('', include('core.urls')),
+    path('admin/enterprise/audit-logs/', audit_log_view, name='admin_audit_logs'),
+    path('admin/enterprise/health/', diagnostic_center_view, name='admin_system_health'),
+    path('admin/enterprise/ai-insights/', ai_insights_view, name='admin_ai_insights'),
     path('admin/', admin.site.urls),
     path('accounts/', include('accounts.urls')),
     path('classroom/', include('classroom.urls')),

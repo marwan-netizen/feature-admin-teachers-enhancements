@@ -1,6 +1,7 @@
 from django.contrib import admin
 from unfold.admin import ModelAdmin, TabularInline
 from .models import Test, Question, Option, StudentAnswer, Result, Evaluation
+from enterprise.admin_utils import EnterpriseSearchMixin, BulkActionMixin
 
 class OptionInline(TabularInline):
     model = Option
@@ -11,7 +12,8 @@ class QuestionInline(TabularInline):
     extra = 1
 
 @admin.register(Test)
-class TestAdmin(ModelAdmin):
+class TestAdmin(ModelAdmin, EnterpriseSearchMixin, BulkActionMixin):
+    actions = ["export_as_json"]
     list_display = ("test_name", "level", "skill", "teacher", "created_at")
     list_filter = ("level", "skill")
     search_fields = ("test_name", "content")

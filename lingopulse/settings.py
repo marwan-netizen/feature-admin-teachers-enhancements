@@ -38,6 +38,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    # 'two_factor',  # Disabled during development to avoid redirect loops in headless environments
+    # 'django_otp',
+    # 'django_otp.plugins.otp_static',
+    # 'django_otp.plugins.otp_totp',
     'rest_framework',
     'django_filters',
     'django_htmx',
@@ -82,6 +86,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    # 'django_otp.middleware.OTPMiddleware',
     'django_htmx.middleware.HtmxMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -187,7 +192,7 @@ UNFOLD = {
     "DASHBOARD_CALLBACK": "enterprise.services.dashboard.get_dashboard_data",
     "SIDEBAR": {
         "show_search": True,
-        "show_all_applications": True,
+        "show_all_applications": False,
         "navigation": [
             {
                 "title": "Operational Intelligence",
@@ -198,30 +203,42 @@ UNFOLD = {
                         "link": "/admin/",
                     },
                     {
-                        "title": "Analytics",
-                        "icon": "analytics",
-                        "link": "/admin/analytics/daily_metrics/",
+                        "title": "AI Insights",
+                        "icon": "psychology",
+                        "link": "/admin/enterprise/ai-insights/",
+                    },
+                    {
+                        "title": "System Health",
+                        "icon": "health_and_safety",
+                        "link": "/admin/enterprise/health/",
                     },
                 ],
             },
             {
-                "title": "Core Management",
+                "title": "Educational Core",
                 "items": [
-                    {
-                        "title": "Users",
-                        "icon": "person",
-                        "link": "/admin/accounts/user/",
-                    },
-                    {
-                        "title": "Tests",
-                        "icon": "quiz",
-                        "link": "/admin/testing/test/",
-                    },
-                    {
-                        "title": "Classrooms",
-                        "icon": "school",
-                        "link": "/admin/classroom/classes/",
-                    },
+                    {"title": "Users", "icon": "person", "link": "/admin/accounts/user/"},
+                    {"title": "Classrooms", "icon": "school", "link": "/admin/classroom/classes/"},
+                    {"title": "Tests", "icon": "quiz", "link": "/admin/testing/test/"},
+                    {"title": "Vocabulary", "icon": "menu_book", "link": "/admin/vocabulary/word/"},
+                ],
+            },
+            {
+                "title": "Learning Modules",
+                "items": [
+                    {"title": "Games", "icon": "sports_esports", "link": "/admin/games/gamescore/"},
+                    {"title": "Media Learning", "icon": "movie", "link": "/admin/media_learning/mediabookmark/"},
+                    {"title": "Grammar", "icon": "spellcheck", "link": "/admin/grammar_analysis/learninggap/"},
+                    {"title": "Adaptive Plans", "icon": "settings_suggest", "link": "/admin/adaptive_learning/adaptiveplan/"},
+                ],
+            },
+            {
+                "title": "Platform Engineering",
+                "items": [
+                    {"title": "Analytics", "icon": "analytics", "link": "/admin/analytics/dailymetric/"},
+                    {"title": "AI Engine", "icon": "smart_toy", "link": "/admin/ai_engine/chatsession/"},
+                    {"title": "Audit Logs", "icon": "history_edu", "link": "/admin/core/activitylog/"},
+                    {"title": "Security", "icon": "shield", "link": "/admin/otp_totp/totpdevice/"},
                 ],
             },
         ],

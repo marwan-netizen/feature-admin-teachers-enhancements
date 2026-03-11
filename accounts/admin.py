@@ -10,6 +10,7 @@ from guardian.admin import GuardedModelAdmin
 from unfold.forms import UserChangeForm, UserCreationForm, AdminPasswordChangeForm
 from .models import User, Student, Teacher, Admin as AdminProfile
 from .resources import UserResource
+from enterprise.admin_utils import EnterpriseSearchMixin, BulkActionMixin
 
 admin.site.unregister(Group)
 
@@ -18,11 +19,11 @@ class GroupAdmin(BaseGroupAdmin, ModelAdmin):
     pass
 
 @admin.register(User)
-class UserAdmin(BaseUserAdmin, ModelAdmin, ImportExportModelAdmin, SimpleHistoryAdmin):
+class UserAdmin(BaseUserAdmin, ModelAdmin, ImportExportModelAdmin, SimpleHistoryAdmin, EnterpriseSearchMixin, BulkActionMixin):
     resource_classes = [UserResource]
     import_form_class = ImportForm
     export_form_class = ExportForm
-    actions = ["make_active", "make_inactive"]
+    actions = ["make_active", "make_inactive", "export_as_json"]
 
     @admin.action(description="Mark selected users as active")
     def make_active(self, request, queryset):
