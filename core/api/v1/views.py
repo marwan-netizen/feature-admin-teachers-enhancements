@@ -120,3 +120,12 @@ class ActivityViewSet(viewsets.ModelViewSet):
         if self.request.user.role == 'admin':
             return self.queryset
         return self.queryset.filter(user=self.request.user)
+
+class LeaderboardViewSet(viewsets.ReadOnlyModelViewSet):
+    from .serializers import StudentProfileSerializer
+    serializer_class = StudentProfileSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        # Placeholder for ranking logic
+        return Student.objects.all().order_by('-student_id')[:100]

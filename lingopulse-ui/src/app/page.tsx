@@ -10,13 +10,13 @@ export default function Home() {
       <div className="absolute top-8 right-8 flex gap-4">
          <button
            onClick={() => setLanguage(language === 'en' ? 'ar' : 'en')}
-           className="glass px-4 py-2 rounded-full border border-cyan-500/30 text-cyan-400 font-bold hover:bg-cyan-500/10 transition-all"
+           className="glass px-4 py-2 rounded-full border border-cyan-500/30 text-cyan-400 font-bold hover:bg-cyan-500/10 transition-all z-50"
          >
             {language === 'en' ? 'العربية' : 'English'}
          </button>
       </div>
 
-      <div className="text-center">
+      <div className="text-center relative z-10">
         <h1 className="text-7xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-indigo-400 mb-6 drop-shadow-[0_0_30px_rgba(34,211,238,0.3)]">
           LingoPulse AI
         </h1>
@@ -37,19 +37,27 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="mt-24 grid grid-cols-1 md:grid-cols-4 gap-8 w-full max-w-6xl">
+      <div className="mt-24 grid grid-cols-1 md:grid-cols-4 gap-8 w-full max-w-6xl relative z-10">
          {[
-           { skill: 'speaking', icon: '🎙️' },
-           { skill: 'writing', icon: '✍️' },
-           { skill: 'vocabulary', icon: '📚' },
-           { skill: 'classroom', icon: '🏫' },
+           { skill: 'speaking', icon: '🎙️', path: '/test-center' },
+           { skill: 'writing', icon: '✍️', path: '/test-center' },
+           { skill: 'vocabulary', icon: '📚', path: '/vocabulary' },
+           { skill: 'classroom', icon: '🏫', path: '/classroom' },
          ].map((item, i) => (
-           <div key={i} className="glass rounded-2xl p-8 border border-white/5 flex flex-col items-center group hover:border-cyan-500/30 transition-all cursor-pointer">
-              <span className="text-4xl mb-4 group-hover:scale-125 transition-transform">{item.icon}</span>
-              <h3 className="text-xl font-bold text-indigo-100 mb-2 capitalize">{t(item.skill)}</h3>
-              <p className="text-sm text-indigo-400 text-center">AI-powered assessment and improvement.</p>
-           </div>
+           <Link key={i} href={item.path}>
+             <div className="glass rounded-2xl p-8 border border-white/5 flex flex-col items-center group hover:border-cyan-500/30 transition-all cursor-pointer">
+                <span className="text-4xl mb-4 group-hover:scale-125 transition-transform">{item.icon}</span>
+                <h3 className="text-xl font-bold text-indigo-100 mb-2 capitalize">{t(item.skill)}</h3>
+                <p className="text-sm text-indigo-400 text-center">AI-powered assessment and improvement.</p>
+             </div>
+           </Link>
          ))}
+      </div>
+
+      <div className="mt-12 text-indigo-500 font-bold uppercase tracking-widest relative z-10 flex gap-10">
+         <Link href="/pricing" className="hover:text-cyan-400">Pricing</Link>
+         <Link href="/leaderboard" className="hover:text-cyan-400">Leaderboard</Link>
+         <Link href="/support" className="hover:text-cyan-400">Support</Link>
       </div>
     </main>
   )
