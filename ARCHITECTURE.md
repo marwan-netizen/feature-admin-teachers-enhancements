@@ -41,3 +41,10 @@ LingoPulse AI follows a **Modular Monolith** architecture with **Clean Architect
 - **Global Error Handling**: Middleware catches unhandled exceptions and logs them in a structured JSON format.
 - **Health Checks**: A `/health/` endpoint provides status monitoring.
 - **Soft Deletes**: Implemented across all major models to prevent accidental data loss.
+
+## Security Architecture (Added)
+- **KMS & Field Encryption**: Implemented AES-256-GCM field-level encryption for PII.
+- **Identity & MFA**: Enforced Argon2id and integrated TOTP-based MFA.
+- **Network Segmentation**: Internal Docker network isolation for databases.
+- **Secure CI/CD**: Automated SAST and secret scanning integrated into GitHub Actions.
+- **Threat Model**: Based on STRIDE methodology to mitigate Spoofing, Tampering, and Information Disclosure.

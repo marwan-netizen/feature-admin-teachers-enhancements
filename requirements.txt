@@ -41,3 +41,11 @@ daphne
 sentry-sdk
 psutil
 selenium
+# Security enhancements
+argon2-cffi
+cryptography
+django-cryptography
+hvac
+django-two-factor-auth
+django-otp
+django-otp-plugins

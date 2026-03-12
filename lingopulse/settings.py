@@ -38,10 +38,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    # 'two_factor',  # Disabled during development to avoid redirect loops in headless environments
-    # 'django_otp',
-    # 'django_otp.plugins.otp_static',
-    # 'django_otp.plugins.otp_totp',
+    'two_factor',  # Disabled during development to avoid redirect loops in headless environments
+    'django_otp',
+    'django_otp.plugins.otp_static',
+    'django_otp.plugins.otp_totp',
     'rest_framework',
     'django_filters',
     'django_htmx',
@@ -82,11 +82,12 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'core.middleware.ExceptionHandlerMiddleware',
+    'core.middleware.RBACMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    # 'django_otp.middleware.OTPMiddleware',
+    'django_otp.middleware.OTPMiddleware',
     'django_htmx.middleware.HtmxMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -135,6 +136,14 @@ else:
             'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
+
+
+PASSWORD_HASHERS = [
+    'django.contrib.auth.hashers.Argon2PasswordHasher',
+    'django.contrib.auth.hashers.PBKDF2PasswordHasher',
+    'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
+    'django.contrib.auth.hashers.BCryptSHA256PasswordHasher',
+]
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
@@ -247,7 +256,9 @@ UNFOLD = {
 
 # Security Settings
 CSRF_COOKIE_HTTPONLY = True
+CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SECURE = True
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'DENY'
@@ -347,3 +358,22 @@ PODCAST_INDEX_API_KEY = env('PODCAST_INDEX_API_KEY', default='')
 PODCAST_INDEX_API_SECRET = env('PODCAST_INDEX_API_SECRET', default='')
 OPEN_SUBTITLES_API_KEY = env('OPEN_SUBTITLES_API_KEY', default='')
 GOOGLE_BOOKS_API_KEY = env('GOOGLE_BOOKS_API_KEY', default='')
+
+# Production Security Headers
+SECURE_HSTS_SECONDS = 31536000 # 1 year
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
+SECURE_SSL_REDIRECT = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_REFERRER_POLICY = 'same-origin'
+
+# CSP Settings
+CSP_DEFAULT_SRC = ("'self'",)
+CSP_STYLE_SRC = ("'self'", "'unsafe-inline'", "https://fonts.googleapis.com")
+CSP_SCRIPT_SRC = ("'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net")
+CSP_IMG_SRC = ("'self'", "data:", "https://*")
+CSP_FONT_SRC = ("'self'", "https://fonts.gstatic.com")
+
+import sys
+if 'test' in sys.argv or 'pytest' in sys.modules:
+    SECURE_SSL_REDIRECT = False
