@@ -1,9 +1,8 @@
-from django.urls import path
+from django.urls import path, include
 from . import views
+from ai_engine import views as ai_views
 
 app_name = 'core'
-
-from ai_engine import views as ai_views
 
 urlpatterns = [
     path('', views.index, name='index'),
@@ -11,4 +10,5 @@ urlpatterns = [
     path('health/', views.health_check, name='health_check'),
     path('test-loading/', views.render_loading_test, name='test_loading'),
     path('strengthening/', ai_views.strengthening_plan, name='strengthening'),
+    path('api/v1/', include('core.api.v1.urls')),
 ]
