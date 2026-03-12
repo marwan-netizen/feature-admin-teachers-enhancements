@@ -25,6 +25,7 @@ if not DEBUG:
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['*'])
 
 INSTALLED_APPS = [
+    'corsheaders',
     'daphne',
     'unfold',
     'unfold.contrib.filters',
@@ -84,6 +85,7 @@ MIDDLEWARE = [
     'core.middleware.ExceptionHandlerMiddleware',
     'core.middleware.RBACMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -377,3 +379,12 @@ CSP_FONT_SRC = ("'self'", "https://fonts.gstatic.com")
 import sys
 if 'test' in sys.argv or 'pytest' in sys.modules:
     SECURE_SSL_REDIRECT = False
+
+# CORS and CSRF configurations for production
+CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[])
+CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=[])
+
+# Additional production overrides
+if not DEBUG:
+    DATABASES['default'] = env.db('DATABASE_URL')
+    DATABASES['default']['CONN_MAX_AGE'] = 600
