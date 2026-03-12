@@ -1,0 +1,13 @@
+import { LanguageProvider } from '@/context/LanguageContext'
+import { LanguageToggle } from '@/components/LanguageToggle'
+
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="relative min-h-screen">
+      <div className="absolute top-4 right-4 z-50">
+         <LanguageToggle />
+      </div>
+      {children}
+    </div>
+  )
+}
