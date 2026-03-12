@@ -6,14 +6,16 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     environment:
-      - POSTGRES_DB=lingopulse
-      - POSTGRES_USER=lingopulse
-      - POSTGRES_PASSWORD=lingopulse
+      - POSTGRES_DB=${DB_NAME:-lingopulse}
+      - POSTGRES_USER=${DB_USER:-lingopulse}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U lingopulse"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-lingopulse}"]
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - backend
 
   redis:
     image: redis:7-alpine
@@ -24,20 +26,22 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - backend
 
   web:
     build: .
     command: gunicorn --bind 0.0.0.0:8000 --workers 4 --threads 2 --worker-class uvicorn.workers.UvicornWorker lingopulse.asgi:application
     volumes:
-      - .:/app
       - static_volume:/app/staticfiles
       - media_volume:/app/media
     ports:
       - "8000:8000"
     environment:
       - DEBUG=False
-      - APP_KEY=production_secret_key_change_me
-      - DATABASE_URL=postgres://lingopulse:lingopulse@db:5432/lingopulse
+      - APP_KEY=${APP_KEY}
+      - KMS_MASTER_KEY=${KMS_MASTER_KEY}
+      - DATABASE_URL=postgres://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
       - REDIS_URL=redis://redis:6379/1
@@ -46,16 +50,21 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    networks:
+      - frontend
+      - backend
+    security_opt:
+      - no-new-privileges:true
 
   worker:
     build: .
     command: celery -A lingopulse worker --loglevel=info
     volumes:
-      - .:/app
       - media_volume:/app/media
     environment:
-      - APP_KEY=production_secret_key_change_me
-      - DATABASE_URL=postgres://lingopulse:lingopulse@db:5432/lingopulse
+      - APP_KEY=${APP_KEY}
+      - KMS_MASTER_KEY=${KMS_MASTER_KEY}
+      - DATABASE_URL=postgres://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
     depends_on:
@@ -63,22 +72,15 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    networks:
+      - backend
+    security_opt:
+      - no-new-privileges:true
 
-  beat:
-    build: .
-    command: celery -A lingopulse beat --loglevel=info
-    volumes:
-      - .:/app
-    environment:
-      - APP_KEY=production_secret_key_change_me
-      - DATABASE_URL=postgres://lingopulse:lingopulse@db:5432/lingopulse
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+networks:
+  frontend:
+  backend:
+    internal: true
 
 volumes:
   postgres_data:

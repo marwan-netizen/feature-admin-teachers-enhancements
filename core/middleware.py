@@ -48,3 +48,20 @@ class ExceptionHandlerMiddleware:
             'error': 'Internal Server Error',
             'message': 'An unexpected error occurred. Our engineers have been notified.'
         }, status=500)
+
+class RBACMiddleware:
+    """
+    Middleware for basic Role-Based Access Control.
+    Enforces that only admins can access /admin/.
+    """
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        if request.path.startswith('/admin/') and not request.path.startswith('/admin/login'):
+            if not request.user.is_authenticated or request.user.role != 'admin':
+                from django.http import HttpResponseForbidden
+                return HttpResponseForbidden("Access Denied: Administrative privileges required.")
+
+        response = self.get_response(request)
+        return response

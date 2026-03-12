@@ -72,7 +72,7 @@ class PodcastIndexService(BaseExternalService):
         api_secret = settings.PODCAST_INDEX_API_SECRET
         epoch_time = int(time.time())
         data_to_hash = api_key + api_secret + str(epoch_time)
-        sha_1 = hashlib.sha1(data_to_hash.encode()).hexdigest()
+        sha_1 = hashlib.sha1(data_to_hash.encode(), usedforsecurity=False).hexdigest()
 
         headers = {
             'X-Auth-Key': api_key,

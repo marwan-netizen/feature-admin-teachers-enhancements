@@ -16,28 +16,30 @@ ENV PYTHONUNBUFFERED=1
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    libpq-dev \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y     build-essential     libpq-dev     curl     --no-install-recommends     && rm -rf /var/lib/apt/lists/*
+
+# Create a non-root user
+RUN groupadd -g 1000 appuser &&     useradd -r -u 1000 -g appuser appuser
 
 # Install Python dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy project files
-COPY . .
+COPY --chown=appuser:appuser . .
 
 # Copy built assets from frontend-builder
-COPY --from=frontend-builder /app/core/static/dist ./core/static/dist
+COPY --from=frontend-builder --chown=appuser:appuser /app/core/static/dist ./core/static/dist
 
-# Create necessary directories
-RUN mkdir -p /app/media /app/staticfiles
+# Create necessary directories and set permissions
+RUN mkdir -p /app/media /app/staticfiles &&     chown -R appuser:appuser /app/media /app/staticfiles
 
 # Set up entrypoint
-COPY docker-entrypoint.sh /usr/local/bin/
+COPY --chown=appuser:appuser docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+# Switch to non-root user
+USER appuser
 
 EXPOSE 8000
 
